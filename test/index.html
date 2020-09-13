@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>OCDots</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="../ocdots.js"></script>
+  </head>
+  <body>
+    <div>
+      <canvas id="canvas"></canvas>
+    </div>
+    <script>
+      const canvas = document.getElementById("canvas");
+      const ctx = canvas.getContext("2d");
+
+      const N = 21;
+      const size = 500;
+      const polygon = [
+        [0, 0],
+        [0, size],
+        [size/2, size],
+        [size, size/2],
+        [size, 0],
+        [0, 0],
+      ];
+      let points = randomInPolygon(N, polygon);
+      let momentum = points.map(() => [0, 0]);
+
+      function draw() {
+        drawPolygonAndPoints(canvas, points, polygon);
+        [points, momentum] = movePoints({ points, momentum, polygon });
+        window.requestAnimationFrame(draw);
+      }
+      draw();
+    </script>
+  </body>
+</html>

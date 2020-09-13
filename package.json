@@ -1,0 +1,42 @@
+{
+  "name": "ocdots",
+  "version": "1.0.0",
+  "description": "OCDots is a library for creating evenly distributed points inside a polygon",
+  "main": "ocdots.js",
+  "scripts": {
+    "dev": "npm install && npm link . && npm link ocdots",
+    "test": "jest --coverage",
+    "pretty": "prettier --write \"README.md\" \"ocdots.js\" \"test/**/*.js\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/luxedo/OCDots.git"
+  },
+  "keywords": [
+    "polygon",
+    "partition",
+    "dots"
+  ],
+  "author": "Luiz Eduardo Amaral",
+  "license": "GPL-3.0-or-later",
+  "dependencies": {},
+  "devDependencies": {
+    "canvas": "^2.6.1",
+    "chai": "^4.2.0",
+    "husky": "^4.3.0",
+    "jest": "^26.4.2",
+    "mocha": "^8.1.3",
+    "prettier": "^2.1.1"
+  },
+  "lint-staged": {
+    "*.js": [
+      "npm run pretty",
+      "git add"
+    ]
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "npm run pretty && npm test"
+    }
+  }
+}
