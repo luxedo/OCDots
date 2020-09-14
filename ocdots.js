@@ -22,617 +22,645 @@ const VISCOSITY = 0.01;
 const MAXMOMENTUM = 5;
 const ATTENUATION = 0.01;
 
-/*
- * Moves points according to the applied forces into it. The forces
- * are: 1) between points, 2) between the point and walls of the
- * polygon, 3) between points and vertexes of the polygon.
- *
- * The points moves according to it's momentum up to maxMomentum.
- * Drag reduces the momentum with the square of the momentum.
- * Viscosity lowers the momentum when the momentum value is lower
- * thatn viscosity.
- *
- * Runs one iteration
- *
- * @param {Array} points The points to move
- * @param {Array} momentum Accumulated momentum for each point. [0, 0]
- *      when the points are stopped.
- * @param {Array} polygon Set of points that describes the polygon that
- *      contains the points. This polygon should be ordered (clockwise
- *      or anticlockwise) and closed i.e. first points equals the last
- *      point.
- * @param {Number} baseForce The force constant
- * @param {Number} drag The drag coeficient
- * @param {Number} viscosity The viscosity coeficient
- * @param {Number} maxMomentum Maximum momentum for each point
- * @return {Array, Array} points,momentum Updated points and momentum
- *      arrays
- */
-function movePoints({
-  points,
-  momentum,
-  polygon,
-  baseForce = BASEFORCE,
-  drag = DRAG,
-  viscosity = VISCOSITY,
-  maxMomentum = MAXMOMENTUM,
-}) {
-  let p = [...points];
-  let m = [...momentum];
+const ocdots = (() => {
+  /*
+   * Moves points according to the applied forces into it. The forces
+   * are: 1) between points, 2) between the point and walls of the
+   * polygon, 3) between points and vertexes of the polygon.
+   *
+   * The points moves according to it's momentum up to maxMomentum.
+   * Drag reduces the momentum with the square of the momentum.
+   * Viscosity lowers the momentum when the momentum value is lower
+   * thatn viscosity.
+   *
+   * Runs one iteration
+   *
+   * @param {Array} points The points to move
+   * @param {Array} momentum Accumulated momentum for each point. [0, 0]
+   *      when the points are stopped.
+   * @param {Array} polygon Set of points that describes the polygon that
+   *      contains the points. This polygon should be ordered (clockwise
+   *      or anticlockwise) and closed i.e. first points equals the last
+   *      point.
+   * @param {Number} baseForce The force constant
+   * @param {Number} drag The drag coeficient
+   * @param {Number} viscosity The viscosity coeficient
+   * @param {Number} maxMomentum Maximum momentum for each point
+   * @return {Array, Array} points,momentum Updated points and momentum
+   *      arrays
+   */
+  function movePoints({
+    points,
+    momentum,
+    polygon,
+    baseForce = BASEFORCE,
+    drag = DRAG,
+    viscosity = VISCOSITY,
+    maxMomentum = MAXMOMENTUM,
+  }) {
+    let p = [...points];
+    let m = [...momentum];
 
-  // Calculate forces
-  const pf = p.map((pt) => pointForces(pt, p));
-  const bf = p.map((pt) => polygonForces(pt, polygon));
+    // Calculate forces
+    const pf = p.map((pt) => pointForces(pt, p));
+    const bf = p.map((pt) => polygonForces(pt, polygon));
 
-  // Update momentum
-  m = m.map((mt, i) => {
-    const force = [
-      baseForce * (pf[i][0] + bf[i][0]),
-      baseForce * (pf[i][1] + bf[i][1]),
-    ];
-    return updateMomentum(mt, force, drag, viscosity, maxMomentum);
-  });
-
-  // Update position
-  p = p.map((pt, i) => {
-    const px = pt[0] + m[i][0];
-    const py = pt[1] + m[i][1];
-    if (checkInbounds([px, py], polygon)) return [px, py];
-    return pt;
-  });
-  return [p, m];
-}
-
-/*
- * Calculates forces on pt from points.
- *
- * @param {Array} pt The point to measure forces
- * @param {Array} points The points acting on pt
- * @return {Array} force Sum of forces acting on pt
- */
-function pointForces(pt, p) {
-  return p.reduce(
-    (acc, pt0) => {
-      const vdx = pt[0] - pt0[0];
-      const vdy = pt[1] - pt0[1];
-      let norm2 = Math.pow(vdx, 2) + Math.pow(vdy, 2);
-      norm2 = norm2 != 0 ? norm2 : Infinity;
-      const norm = Math.sqrt(norm2);
-      const fx = vdx / norm / norm2;
-      const fy = vdy / norm / norm2;
-      return [acc[0] + fx, acc[1] + fy];
-    },
-    [0, 0]
-  );
-}
-
-/*
- * Calculates forces on pt from polygon. The forces are a sum of vertex
- * forces and wall forces.
- *
- * @param {Array} pt The point to measure forces
- * @param {Array} polygon The polygons vertexes
- * @return {Array} force Sum of forces acting on pt
- */
-function polygonForces(pt, polygon) {
-  const pf = polygon.slice(1).reduce(
-    (acc, v2, i1) => {
-      const v1 = polygon[i1];
-      const wd = minDistanceToLine(pt, v1, v2);
-      const wdm2 = Math.pow(wd[0], 2) + Math.pow(wd[1], 2);
-      const wdm = Math.sqrt(wdm2);
-      const wf = [-wd[0] / wdm / wdm2, -wd[1] / wdm / wdm2];
-
-      // const vd = [pt[0] - v1[0], pt[1] - v1[1]];
-      // const vdm2 = Math.pow(vd[0], 2) + Math.pow(vd[1], 2);
-      // const vdm = Math.sqrt(vdm2);
-      // const vf = [2*vd[0] / vdm / vdm2, 2*vd[1] / vdm / vdm2];
-
-      return [acc[0] + wf[0], acc[1] + wf[1]];
-      // return [acc[0] + wf[0] + vf[0], acc[1] + wf[1] + vf[1]];
-    },
-    [0, 0]
-  );
-  return [pf[0], pf[1]];
-}
-
-/*
- * Updates the momentum.
- *
- * @param {Array} mt Initial momentum
- * @param {Array} force Forcing acting at the point
- * @param {Number} drag The drag coeficient
- * @param {Number} viscosity The viscosity coeficient
- * @param {Number} maxMomentum Maximum momentum for each point
- * @return {Array} mu Updated momentum
- */
-function updateMomentum(mt, force, drag, viscosity, maxMomentum) {
-  const mx = force[0] + mt[0];
-  const my = force[1] + mt[1];
-  let norm2 = Math.pow(mx, 2) + Math.pow(my, 2);
-  norm2 = norm2 != 0 ? norm2 : Infinity;
-  const norm = Math.sqrt(norm2);
-  let intensity = norm - drag * norm2;
-  intensity = intensity < viscosity ? intensity / 2 : intensity; // Not quite but good enough
-  intensity = intensity > maxMomentum ? maxMomentum : intensity;
-  intensity = intensity < 0 ? 1 : intensity;
-  return [(intensity * mx) / norm, (intensity * my) / norm];
-}
-
-/*
- * Calculates the minimum distance from pt to the line segment defined
- * by vertexes v1 and v2.
- *
- * @param {Array} pt The point to measure forces
- * @param {Array} v1 Line vertex #1
- * @param {Array} v2 Line vertex #2
- * @return {Array} d Distance between pt and the line v1->v2
- */
-function minDistanceToLine(pt, v1, v2) {
-  const pv1 = [pt[0] - v1[0], pt[1] - v1[1]];
-  const npv1 = Math.sqrt(Math.pow(pv1[0], 2) + Math.pow(pv1[1], 2));
-  const v2v1 = [v2[0] - v1[0], v2[1] - v1[1]];
-  const nv2v1 = Math.sqrt(Math.pow(v2v1[0], 2) + Math.pow(v2v1[1], 2));
-  if (
-    Math.acos(
-      (pv1[0] / npv1) * (v2v1[0] / nv2v1) + (pv1[1] / npv1) * (nv2v1[1] / nv2v1)
-    ) >
-    Math.PI / 2
-  ) {
-    return [-pv1[0], -pv1[1]];
-  }
-  const pv2 = [pt[0] - v2[0], pt[1] - v2[1]];
-  const npv2 = Math.sqrt(Math.pow(pv2[0], 2) + Math.pow(pv2[1], 2));
-  const v1v2 = [v1[0] - v2[0], v1[1] - v2[1]];
-  const nv1v2 = Math.sqrt(Math.pow(v1v2[0], 2) + Math.pow(v1v2[1], 2));
-  if (
-    Math.acos(
-      (pv2[0] / npv2) * (v1v2[0] / nv1v2) + (pv2[1] / npv2) * (nv1v2[1] / nv1v2)
-    ) >
-    Math.PI / 2
-  ) {
-    return [-pv2[0], -pv2[1]];
-  }
-
-  const v1p = [v1[0] - pt[0], v1[1] - pt[1]];
-  const n = [v1v2[0] / nv1v2, v1v2[1] / nv1v2];
-  const d = v1p[0] * n[0] + v1p[1] * n[1];
-  return [v1p[0] - d * n[0], v1p[1] - d * n[1]];
-}
-
-// function dot(p1, p2) {
-//   return p1[0] * p2[0] + p1[1] * p2[1];
-// }
-
-/*
- * Checks if the point pt is inside polygon.
- *
- * @param {Array} pt The point to measure forces
- * @param {Array} polygon Set of points that describes the polygon.
- *      This polygon should be ordered (clockwise or anticlockwise) and
- *      closed i.e. first points equals the last point.
- * @return {boolean} inbound True if pt is inside the polygon
- */
-function checkInbounds(pt, polygon) {
-  let inbound = false;
-  const [x, y] = pt;
-  for (let i = 1; i < polygon.length; i++) {
-    const [p1x, p1y] = polygon[i - 1];
-    const [p2x, p2y] = polygon[i];
-    if (p2y > y != p1y > y && x < p2x + ((p1x - p2x) * (y - p2y)) / (p1y - p2y))
-      inbound = !inbound;
-  }
-  return inbound;
-}
-
-/*
- * Creates N points inside the polygon
- *
- * @param {Number} N Number of points
- * @param {Array} polygon Set of points that describes the polygon.
- *      This polygon should be ordered (clockwise or anticlockwise) and
- *      closed i.e. first points equals the last point.
- * @return {Array} points N points inside the polygon
- */
-function randomInPolygon(N, polygon) {
-  let points = [];
-  const { xMin, xMax, yMin, yMax } = polygon.reduce(
-    (acc, v) => {
-      acc.xMin = v[0] < acc.xMin ? v[0] : acc.xMin;
-      acc.xMax = v[0] > acc.xMax ? v[0] : acc.xMax;
-      acc.yMin = v[1] < acc.yMin ? v[1] : acc.yMin;
-      acc.yMax = v[1] > acc.yMax ? v[1] : acc.yMax;
-      return acc;
-    },
-    {
-      xMin: Infinity,
-      xMax: 0,
-      yMin: Infinity,
-      yMax: 0,
-    }
-  );
-  const deltaX = xMax - xMin;
-  const deltaY = yMax - yMin;
-  while (points.length < N) {
-    const pt = [xMin + Math.random() * deltaX, yMin + Math.random() * deltaY];
-    if (checkInbounds(pt, polygon)) points.push(pt);
-  }
-  return points;
-}
-
-/*
- * Creates N points inside a geo polygon,
- *
- * @param {Number} N Number of points
- * @param {Array} geoPolygon Polygon of geo coordinates {lat, lng}
- * @return {Array} points N points inside the geo polygon
- */
-function randomInGeoPolygon(N, geoPolygon) {
-  return randomInPolygon(
-    N,
-    geoPolygon.map((p) => [p.lat, p.lng])
-  ).map((p) => ({ lat: p[0], lng: p[1] }));
-}
-
-/*
- * Runs several iterations of movePoints(). The drag increases in every
- * iteration attenuating the movement.
- *
- * @param {Array} points The points to move
- * @param {Array} momentum Initial momentum. [0, 0] for all points if
- *      ommited
- * @param {Array} polygon Set of points that describes the polygon that
- *      contains the points. This polygon should be ordered (clockwise
- *      or anticlockwise) and closed i.e. first points equals the last
- *      point.
- * @param {Number} iterations Number of iterations to run
- * @param {Number} attenuation Rate of attenuation
- * @param {Number} baseForce The force constant
- * @param {Number} drag The drag coeficient
- * @param {Number} viscosity The viscosity coeficient
- * @param {Number} maxMomentum Maximum momentum for each point
- * @param {Function} callback Callback function to run at every
- *      iteration (optional). Callback args: points, momentum, polygon,
- *      baseForce, currentDrag, viscosity, maxMomentum
- * @return {Array} points Last iteration points positions
- */
-function relaxPoints({
-  points,
-  momentum,
-  polygon,
-  iterations,
-  callback,
-  baseForce = BASEFORCE,
-  drag = DRAG,
-  viscosity = VISCOSITY,
-  maxMomentum = MAXMOMENTUM,
-  attenuation = ATTENUATION,
-}) {
-  let p = [...points];
-  let m = momentum == undefined ? p.map(() => [0, 0]) : [...momentum];
-
-  let att = 1 + attenuation;
-  for (let i = 0, attIter = att; i < iterations; i++, attIter *= att) {
-    [p, m] = movePoints({
-      points: p,
-      momentum: m,
-      polygon,
-      baseForce,
-      drag: drag * attIter,
-      viscosity,
-      maxMomentum,
+    // Update momentum
+    m = m.map((mt, i) => {
+      const force = [
+        baseForce * (pf[i][0] + bf[i][0]),
+        baseForce * (pf[i][1] + bf[i][1]),
+      ];
+      return updateMomentum(mt, force, drag, viscosity, maxMomentum);
     });
-    if (callback != undefined) {
-      callback(
-        p,
-        m,
+
+    // Update position
+    p = p.map((pt, i) => {
+      const px = pt[0] + m[i][0];
+      const py = pt[1] + m[i][1];
+      if (checkInbounds([px, py], polygon)) return [px, py];
+      return pt;
+    });
+    return [p, m];
+  }
+
+  /*
+   * Calculates forces on pt from points.
+   *
+   * @param {Array} pt The point to measure forces
+   * @param {Array} points The points acting on pt
+   * @return {Array} force Sum of forces acting on pt
+   */
+  function pointForces(pt, p) {
+    return p.reduce(
+      (acc, pt0) => {
+        const vdx = pt[0] - pt0[0];
+        const vdy = pt[1] - pt0[1];
+        let norm2 = Math.pow(vdx, 2) + Math.pow(vdy, 2);
+        norm2 = norm2 != 0 ? norm2 : Infinity;
+        const norm = Math.sqrt(norm2);
+        const fx = vdx / norm / norm2;
+        const fy = vdy / norm / norm2;
+        return [acc[0] + fx, acc[1] + fy];
+      },
+      [0, 0]
+    );
+  }
+
+  /*
+   * Calculates forces on pt from polygon. The forces are a sum of vertex
+   * forces and wall forces.
+   *
+   * @param {Array} pt The point to measure forces
+   * @param {Array} polygon The polygons vertexes
+   * @return {Array} force Sum of forces acting on pt
+   */
+  function polygonForces(pt, polygon) {
+    const pf = polygon.slice(1).reduce(
+      (acc, v2, i1) => {
+        const v1 = polygon[i1];
+        const wd = minDistanceToLine(pt, v1, v2);
+        const wdm2 = Math.pow(wd[0], 2) + Math.pow(wd[1], 2);
+        const wdm = Math.sqrt(wdm2);
+        const wf = [-wd[0] / wdm / wdm2, -wd[1] / wdm / wdm2];
+
+        // const vd = [pt[0] - v1[0], pt[1] - v1[1]];
+        // const vdm2 = Math.pow(vd[0], 2) + Math.pow(vd[1], 2);
+        // const vdm = Math.sqrt(vdm2);
+        // const vf = [2*vd[0] / vdm / vdm2, 2*vd[1] / vdm / vdm2];
+
+        return [acc[0] + wf[0], acc[1] + wf[1]];
+        // return [acc[0] + wf[0] + vf[0], acc[1] + wf[1] + vf[1]];
+      },
+      [0, 0]
+    );
+    return [pf[0], pf[1]];
+  }
+
+  /*
+   * Updates the momentum.
+   *
+   * @param {Array} mt Initial momentum
+   * @param {Array} force Forcing acting at the point
+   * @param {Number} drag The drag coeficient
+   * @param {Number} viscosity The viscosity coeficient
+   * @param {Number} maxMomentum Maximum momentum for each point
+   * @return {Array} mu Updated momentum
+   */
+  function updateMomentum(mt, force, drag, viscosity, maxMomentum) {
+    const mx = force[0] + mt[0];
+    const my = force[1] + mt[1];
+    let norm2 = Math.pow(mx, 2) + Math.pow(my, 2);
+    norm2 = norm2 != 0 ? norm2 : Infinity;
+    const norm = Math.sqrt(norm2);
+    let intensity = norm - drag * norm2;
+    intensity = intensity < viscosity ? intensity / 2 : intensity; // Not quite but good enough
+    intensity = intensity > maxMomentum ? maxMomentum : intensity;
+    intensity = intensity < 0 ? 1 : intensity;
+    return [(intensity * mx) / norm, (intensity * my) / norm];
+  }
+
+  /*
+   * Calculates the minimum distance from pt to the line segment defined
+   * by vertexes v1 and v2.
+   *
+   * @param {Array} pt The point to measure forces
+   * @param {Array} v1 Line vertex #1
+   * @param {Array} v2 Line vertex #2
+   * @return {Array} d Distance between pt and the line v1->v2
+   */
+  function minDistanceToLine(pt, v1, v2) {
+    const pv1 = [pt[0] - v1[0], pt[1] - v1[1]];
+    const npv1 = Math.sqrt(Math.pow(pv1[0], 2) + Math.pow(pv1[1], 2));
+    const v2v1 = [v2[0] - v1[0], v2[1] - v1[1]];
+    const nv2v1 = Math.sqrt(Math.pow(v2v1[0], 2) + Math.pow(v2v1[1], 2));
+    if (
+      Math.acos(
+        (pv1[0] / npv1) * (v2v1[0] / nv2v1) +
+          (pv1[1] / npv1) * (nv2v1[1] / nv2v1)
+      ) >
+      Math.PI / 2
+    ) {
+      return [-pv1[0], -pv1[1]];
+    }
+    const pv2 = [pt[0] - v2[0], pt[1] - v2[1]];
+    const npv2 = Math.sqrt(Math.pow(pv2[0], 2) + Math.pow(pv2[1], 2));
+    const v1v2 = [v1[0] - v2[0], v1[1] - v2[1]];
+    const nv1v2 = Math.sqrt(Math.pow(v1v2[0], 2) + Math.pow(v1v2[1], 2));
+    if (
+      Math.acos(
+        (pv2[0] / npv2) * (v1v2[0] / nv1v2) +
+          (pv2[1] / npv2) * (nv1v2[1] / nv1v2)
+      ) >
+      Math.PI / 2
+    ) {
+      return [-pv2[0], -pv2[1]];
+    }
+
+    const v1p = [v1[0] - pt[0], v1[1] - pt[1]];
+    const n = [v1v2[0] / nv1v2, v1v2[1] / nv1v2];
+    const d = v1p[0] * n[0] + v1p[1] * n[1];
+    return [v1p[0] - d * n[0], v1p[1] - d * n[1]];
+  }
+
+  // function dot(p1, p2) {
+  //   return p1[0] * p2[0] + p1[1] * p2[1];
+  // }
+
+  /*
+   * Checks if the point pt is inside polygon.
+   *
+   * @param {Array} pt The point to measure forces
+   * @param {Array} polygon Set of points that describes the polygon.
+   *      This polygon should be ordered (clockwise or anticlockwise) and
+   *      closed i.e. first points equals the last point.
+   * @return {boolean} inbound True if pt is inside the polygon
+   */
+  function checkInbounds(pt, polygon) {
+    let inbound = false;
+    const [x, y] = pt;
+    for (let i = 1; i < polygon.length; i++) {
+      const [p1x, p1y] = polygon[i - 1];
+      const [p2x, p2y] = polygon[i];
+      if (
+        p2y > y != p1y > y &&
+        x < p2x + ((p1x - p2x) * (y - p2y)) / (p1y - p2y)
+      )
+        inbound = !inbound;
+    }
+    return inbound;
+  }
+
+  /*
+   * Creates N points inside the polygon
+   *
+   * @param {Number} N Number of points
+   * @param {Array} polygon Set of points that describes the polygon.
+   *      This polygon should be ordered (clockwise or anticlockwise) and
+   *      closed i.e. first points equals the last point.
+   * @return {Array} points N points inside the polygon
+   */
+  function randomInPolygon(N, polygon) {
+    let points = [];
+    const { xMin, xMax, yMin, yMax } = polygon.reduce(
+      (acc, v) => {
+        acc.xMin = v[0] < acc.xMin ? v[0] : acc.xMin;
+        acc.xMax = v[0] > acc.xMax ? v[0] : acc.xMax;
+        acc.yMin = v[1] < acc.yMin ? v[1] : acc.yMin;
+        acc.yMax = v[1] > acc.yMax ? v[1] : acc.yMax;
+        return acc;
+      },
+      {
+        xMin: Infinity,
+        xMax: 0,
+        yMin: Infinity,
+        yMax: 0,
+      }
+    );
+    const deltaX = xMax - xMin;
+    const deltaY = yMax - yMin;
+    while (points.length < N) {
+      const pt = [xMin + Math.random() * deltaX, yMin + Math.random() * deltaY];
+      if (checkInbounds(pt, polygon)) points.push(pt);
+    }
+    return points;
+  }
+
+  /*
+   * Creates N points inside a geo polygon,
+   *
+   * @param {Number} N Number of points
+   * @param {Array} geoPolygon Polygon of geo coordinates {lat, lng}
+   * @return {Array} points N points inside the geo polygon
+   */
+  function randomInGeoPolygon(N, geoPolygon) {
+    return randomInPolygon(
+      N,
+      geoPolygon.map((p) => [p.lat, p.lng])
+    ).map((p) => ({ lat: p[0], lng: p[1] }));
+  }
+
+  /*
+   * Runs several iterations of movePoints(). The drag increases in every
+   * iteration attenuating the movement.
+   *
+   * @param {Array} points The points to move
+   * @param {Array} momentum Initial momentum. [0, 0] for all points if
+   *      ommited
+   * @param {Array} polygon Set of points that describes the polygon that
+   *      contains the points. This polygon should be ordered (clockwise
+   *      or anticlockwise) and closed i.e. first points equals the last
+   *      point.
+   * @param {Number} iterations Number of iterations to run
+   * @param {Number} attenuation Rate of attenuation
+   * @param {Number} baseForce The force constant
+   * @param {Number} drag The drag coeficient
+   * @param {Number} viscosity The viscosity coeficient
+   * @param {Number} maxMomentum Maximum momentum for each point
+   * @param {Function} callback Callback function to run at every
+   *      iteration (optional). Callback args: points, momentum, polygon,
+   *      baseForce, currentDrag, viscosity, maxMomentum
+   * @return {Array} points Last iteration points positions
+   */
+  function relaxPoints({
+    points,
+    momentum,
+    polygon,
+    iterations,
+    callback,
+    baseForce = BASEFORCE,
+    drag = DRAG,
+    viscosity = VISCOSITY,
+    maxMomentum = MAXMOMENTUM,
+    attenuation = ATTENUATION,
+  }) {
+    let p = [...points];
+    let m = momentum == undefined ? p.map(() => [0, 0]) : [...momentum];
+
+    let att = 1 + attenuation;
+    for (let i = 0, attIter = att; i < iterations; i++, attIter *= att) {
+      [p, m] = movePoints({
+        points: p,
+        momentum: m,
         polygon,
         baseForce,
-        drag * attIter,
+        drag: drag * attIter,
         viscosity,
-        maxMomentum
-      );
+        maxMomentum,
+      });
+      if (callback != undefined) {
+        callback(
+          p,
+          m,
+          polygon,
+          baseForce,
+          drag * attIter,
+          viscosity,
+          maxMomentum
+        );
+      }
     }
+    return p;
   }
-  return p;
-}
 
-/*
- * Calls relaxPoints for N random points placed inside the polygon.
- *
- * @param {Number} N Number of points
- * @param {Array} polygon Set of points that describes the polygon that
- *      contains the points. This polygon should be ordered (clockwise
- *      or anticlockwise) and closed i.e. first points equals the last
- *      point.
- * @param {Number} iterations Number of iterations to run
- * @param {Function} callback Callback function to run at every
- * @param {Number} baseForce The force constant
- * @param {Number} drag The drag coeficient
- * @param {Number} viscosity The viscosity coeficient
- * @param {Number} maxMomentum Maximum momentum for each point
- * @param {Number} attenuation Rate of attenuation
- *      iteration (optional). Callback args: points, momentum, polygon,
- *      baseForce, currentDrag, viscosity, maxMomentum
- * @return {Array} points Last iteration points positions
- */
+  /*
+   * Calls relaxPoints for N random points placed inside the polygon.
+   *
+   * @param {Number} N Number of points
+   * @param {Array} polygon Set of points that describes the polygon that
+   *      contains the points. This polygon should be ordered (clockwise
+   *      or anticlockwise) and closed i.e. first points equals the last
+   *      point.
+   * @param {Number} iterations Number of iterations to run
+   * @param {Function} callback Callback function to run at every
+   * @param {Number} baseForce The force constant
+   * @param {Number} drag The drag coeficient
+   * @param {Number} viscosity The viscosity coeficient
+   * @param {Number} maxMomentum Maximum momentum for each point
+   * @param {Number} attenuation Rate of attenuation
+   *      iteration (optional). Callback args: points, momentum, polygon,
+   *      baseForce, currentDrag, viscosity, maxMomentum
+   * @return {Array} points Last iteration points positions
+   */
 
-function relaxNPoints({
-  N,
-  polygon,
-  iterations,
-  callback,
-  baseForce = BASEFORCE,
-  drag = DRAG,
-  viscosity = VISCOSITY,
-  maxMomentum = MAXMOMENTUM,
-  attenuation = ATTENUATION,
-}) {
-  const points = randomInPolygon(N, polygon);
-  return relaxPoints({
-    points,
+  function relaxNPoints({
+    N,
     polygon,
     iterations,
     callback,
-    baseForce,
-    drag,
-    viscosity,
-    maxMomentum,
-    attenuation,
-  });
-}
+    baseForce = BASEFORCE,
+    drag = DRAG,
+    viscosity = VISCOSITY,
+    maxMomentum = MAXMOMENTUM,
+    attenuation = ATTENUATION,
+  }) {
+    const points = randomInPolygon(N, polygon);
+    return relaxPoints({
+      points,
+      polygon,
+      iterations,
+      callback,
+      baseForce,
+      drag,
+      viscosity,
+      maxMomentum,
+      attenuation,
+    });
+  }
 
-/*
- * Converts geoPoints and geoPolygon to a points and polygon, then
- * calls relaxPoints, returning the last position of the points.
- *
- * @param {Array} geoPoints Points in geo coordinates lat, lng}
- * @param {Array} geoPolygon Polygon of geo coordinates {lat, lng}
- * @param {Number} width Width of the polygon
- * @param {Number} iterations Number of iterations to run
- * @param {Function} callback Callback function to run at every
- * @param {Number} simplifyPolygon minimum vertex distances
- * @param {Number} baseForce The force constant
- * @param {Number} drag The drag coeficient
- * @param {Number} viscosity The viscosity coeficient
- * @param {Number} maxMomentum Maximum momentum for each point
- * @param {Number} attenuation Rate of attenuation
- *      iteration. Callback args: points, momentum, polygon, baseForce,
- *      currentDrag, viscosity, maxMomentum
- * @return {Object} { polygon, points, geoPoints } Last iteration geo
- *      points positions
- */
-function relaxGeoPoints({
-  geoPoints,
-  geoPolygon,
-  width,
-  iterations,
-  callback,
-  simplifyPolygon = SIMPLIFYPOLYGON,
-  baseForce = BASEFORCE,
-  drag = DRAG,
-  viscosity = VISCOSITY,
-  maxMomentum = MAXMOMENTUM,
-  attenuation = ATTENUATION,
-}) {
-  const { polygon, minLat, minLng, delta } = buildPolygon(
-    geoPolygon,
-    width,
-    simplifyPolygon
-  );
-  const points = relaxPoints({
-    points: geoPoints.map((p) => [
-      (p.lat - minLat) * delta,
-      (p.lng - minLng) * delta,
-    ]),
-    polygon,
-    iterations,
-    callback,
-    baseForce,
-    drag,
-    viscosity,
-    maxMomentum,
-    attenuation,
-  });
-  return {
-    polygon,
-    points,
-    geoPoints: points.map((pt) => ({
-      lat: pt[0] / delta + minLat,
-      lng: pt[1] / delta + minLng,
-    })),
-  };
-}
-
-/*
- * Calls relaxGeoPoints for N random points placed inside the polygon.
- *
- * @param {Number} N Number of points
- * @param {Array} geoPolygon Polygon of geo coordinates {lat, lng}
- * @param {Number} width Width of the polygon
- * @param {Number} iterations Number of iterations to run
- * @param {Function} callback Callback function to run at every
- * @param {Number} simplifyPolygon minimum vertex distances
- * @param {Number} baseForce The force constant
- * @param {Number} drag The drag coeficient
- * @param {Number} viscosity The viscosity coeficient
- * @param {Number} maxMomentum Maximum momentum for each point
- * @param {Number} attenuation Rate of attenuation
- *      iteration. Callback args: points, momentum, polygon, baseForce,
- *      currentDrag, viscosity, maxMomentum
- * @return {Object} { polygon, points, geoPoints } Last iteration geo
- *      points positions
- */
-function relaxNGeoPoints({
-  N,
-  geoPolygon,
-  width,
-  iterations,
-  callback,
-  simplifyPolygon = SIMPLIFYPOLYGON,
-  baseForce = BASEFORCE,
-  drag = DRAG,
-  viscosity = VISCOSITY,
-  maxMomentum = MAXMOMENTUM,
-  attenuation = ATTENUATION,
-}) {
-  const geoPoints = randomInGeoPolygon(N, geoPolygon);
-  return relaxGeoPoints({
+  /*
+   * Converts geoPoints and geoPolygon to a points and polygon, then
+   * calls relaxPoints, returning the last position of the points.
+   *
+   * @param {Array} geoPoints Points in geo coordinates lat, lng}
+   * @param {Array} geoPolygon Polygon of geo coordinates {lat, lng}
+   * @param {Number} width Width of the polygon
+   * @param {Number} iterations Number of iterations to run
+   * @param {Function} callback Callback function to run at every
+   * @param {Number} simplifyPolygon minimum vertex distances
+   * @param {Number} baseForce The force constant
+   * @param {Number} drag The drag coeficient
+   * @param {Number} viscosity The viscosity coeficient
+   * @param {Number} maxMomentum Maximum momentum for each point
+   * @param {Number} attenuation Rate of attenuation
+   *      iteration. Callback args: points, momentum, polygon, baseForce,
+   *      currentDrag, viscosity, maxMomentum
+   * @return {Object} { polygon, points, geoPoints } Last iteration geo
+   *      points positions
+   */
+  function relaxGeoPoints({
     geoPoints,
     geoPolygon,
     width,
     iterations,
     callback,
-    simplifyPolygon,
-    baseForce,
-    drag,
-    viscosity,
-    maxMomentum,
-    attenuation,
-  });
-}
+    simplifyPolygon = SIMPLIFYPOLYGON,
+    baseForce = BASEFORCE,
+    drag = DRAG,
+    viscosity = VISCOSITY,
+    maxMomentum = MAXMOMENTUM,
+    attenuation = ATTENUATION,
+  }) {
+    const { polygon, minLat, minLng, delta } = buildPolygon(
+      geoPolygon,
+      width,
+      simplifyPolygon
+    );
+    const points = relaxPoints({
+      points: geoPoints.map((p) => [
+        (p.lat - minLat) * delta,
+        (p.lng - minLng) * delta,
+      ]),
+      polygon,
+      iterations,
+      callback,
+      baseForce,
+      drag,
+      viscosity,
+      maxMomentum,
+      attenuation,
+    });
+    return {
+      polygon,
+      points,
+      geoPoints: points.map((pt) => ({
+        lat: pt[0] / delta + minLat,
+        lng: pt[1] / delta + minLng,
+      })),
+    };
+  }
 
-/*
- * Transforms a set of coordinates into a polygon with a known width
- *
- * @param {Array} geoPolygon Polygon of geo coordinates {lat, lng}
- * @param {Number} width Width of the polygon
- * @param {Number} simplifyPolygon Minimum distance between vertices.
- *      If vertices are closer than this, the one of them is discarded.
- * @return {Object} { polygon, minLat, minLng, delta }
- */
-function buildPolygon(geoPolygon, width, simplifyPolygon) {
-  const { minLat, maxLat, minLng, maxLng } = geoPolygon.reduce(
-    (acc, v) => {
-      acc.minLat = v.lat < acc.minLat ? v.lat : acc.minLat;
-      acc.maxLat = v.lat > acc.maxLat ? v.lat : acc.maxLat;
-      acc.minLng = v.lng < acc.minLng ? v.lng : acc.minLng;
-      acc.maxLng = v.lng > acc.maxLng ? v.lng : acc.maxLng;
-      return acc;
-    },
-    { minLat: Infinity, maxLat: -Infinity, minLng: Infinity, maxLng: -Infinity }
-  );
-  const delta = width / (maxLng - minLng);
-  let polygon = geoPolygon
-    .map((v) => [delta * (v.lat - minLat), delta * (v.lng - minLng)])
-    .filter((v1, i1, arr) => {
-      return arr.reduce((acc, v2, i2) =>
-        i1 == i2
-          ? acc
-          : !acc
-          ? acc
-          : Math.sqrt(Math.pow(v1[0] - v2[0], 2) + Math.pow(v1[1] - v2[1], 2)) >
-            simplifyPolygon
-      );
-    }, true);
-  polygon = sortPolygon(polygon);
-  return { polygon, minLat, minLng, delta };
-}
+  /*
+   * Calls relaxGeoPoints for N random points placed inside the polygon.
+   *
+   * @param {Number} N Number of points
+   * @param {Array} geoPolygon Polygon of geo coordinates {lat, lng}
+   * @param {Number} width Width of the polygon
+   * @param {Number} iterations Number of iterations to run
+   * @param {Function} callback Callback function to run at every
+   * @param {Number} simplifyPolygon minimum vertex distances
+   * @param {Number} baseForce The force constant
+   * @param {Number} drag The drag coeficient
+   * @param {Number} viscosity The viscosity coeficient
+   * @param {Number} maxMomentum Maximum momentum for each point
+   * @param {Number} attenuation Rate of attenuation
+   *      iteration. Callback args: points, momentum, polygon, baseForce,
+   *      currentDrag, viscosity, maxMomentum
+   * @return {Object} { polygon, points, geoPoints } Last iteration geo
+   *      points positions
+   */
+  function relaxNGeoPoints({
+    N,
+    geoPolygon,
+    width,
+    iterations,
+    callback,
+    simplifyPolygon = SIMPLIFYPOLYGON,
+    baseForce = BASEFORCE,
+    drag = DRAG,
+    viscosity = VISCOSITY,
+    maxMomentum = MAXMOMENTUM,
+    attenuation = ATTENUATION,
+  }) {
+    const geoPoints = randomInGeoPolygon(N, geoPolygon);
+    return relaxGeoPoints({
+      geoPoints,
+      geoPolygon,
+      width,
+      iterations,
+      callback,
+      simplifyPolygon,
+      baseForce,
+      drag,
+      viscosity,
+      maxMomentum,
+      attenuation,
+    });
+  }
 
-/*
- * Sorts the polygon vertexes.
- *
- * @param {Array} polygon Set of points that describes the polygon
- * @return {Array} polygon Sorted polygon
- */
-function sortPolygon(polygon) {
-  const centroid = polygon.reduce(
-    (acc, v, i, arr) => [
-      acc[0] + v[0] / arr.length,
-      acc[1] + v[1] / arr.length,
-    ],
-    [0, 0]
-  );
-  polyton = polygon.sort(
-    (a, b) =>
-      Math.atan2(b[1] - centroid[1], b[0] - centroid[0]) -
-      Math.atan2(a[1] - centroid[1], a[0] - centroid[0])
-  );
-  polygon.push(polygon[0]);
-  return polygon;
-}
+  /*
+   * Transforms a set of coordinates into a polygon with a known width
+   *
+   * @param {Array} geoPolygon Polygon of geo coordinates {lat, lng}
+   * @param {Number} width Width of the polygon
+   * @param {Number} simplifyPolygon Minimum distance between vertices.
+   *      If vertices are closer than this, the one of them is discarded.
+   * @return {Object} { polygon, minLat, minLng, delta }
+   */
+  function buildPolygon(geoPolygon, width, simplifyPolygon) {
+    const { minLat, maxLat, minLng, maxLng } = geoPolygon.reduce(
+      (acc, v) => {
+        acc.minLat = v.lat < acc.minLat ? v.lat : acc.minLat;
+        acc.maxLat = v.lat > acc.maxLat ? v.lat : acc.maxLat;
+        acc.minLng = v.lng < acc.minLng ? v.lng : acc.minLng;
+        acc.maxLng = v.lng > acc.maxLng ? v.lng : acc.maxLng;
+        return acc;
+      },
+      {
+        minLat: Infinity,
+        maxLat: -Infinity,
+        minLng: Infinity,
+        maxLng: -Infinity,
+      }
+    );
+    const delta = width / (maxLng - minLng);
+    let polygon = geoPolygon
+      .map((v) => [delta * (v.lat - minLat), delta * (v.lng - minLng)])
+      .filter((v1, i1, arr) => {
+        return arr.reduce((acc, v2, i2) =>
+          i1 == i2
+            ? acc
+            : !acc
+            ? acc
+            : Math.sqrt(
+                Math.pow(v1[0] - v2[0], 2) + Math.pow(v1[1] - v2[1], 2)
+              ) > simplifyPolygon
+        );
+      }, true);
+    polygon = sortPolygon(polygon);
+    return { polygon, minLat, minLng, delta };
+  }
 
-/*
- * Plots a polygon in the canvas
- *
- * @param {Object} ctx Canvas context
- * @param {Array} polygon Set of points that describes the polygon
- * @param {String} color Points color
- */
-function drawPolygon(ctx, polygon, color = "black") {
-  ctx.strokestyle = color;
-  pt0 = polygon[0];
-  ctx.beginPath();
-  ctx.moveTo(pt0[0], pt0[1]);
-  polygon.slice(1).forEach((pt) => {
-    ctx.lineTo(pt[0], pt[1]);
-  });
-  ctx.closePath();
-  ctx.stroke();
-}
+  /*
+   * Sorts the polygon vertexes.
+   *
+   * @param {Array} polygon Set of points that describes the polygon
+   * @return {Array} polygon Sorted polygon
+   */
+  function sortPolygon(polygon) {
+    const centroid = polygon.reduce(
+      (acc, v, i, arr) => [
+        acc[0] + v[0] / arr.length,
+        acc[1] + v[1] / arr.length,
+      ],
+      [0, 0]
+    );
+    polyton = polygon.sort(
+      (a, b) =>
+        Math.atan2(b[1] - centroid[1], b[0] - centroid[0]) -
+        Math.atan2(a[1] - centroid[1], a[0] - centroid[0])
+    );
+    polygon.push(polygon[0]);
+    return polygon;
+  }
 
-/*
- * Plots points in the canvas
- *
- * @param {Object} ctx Canvas context
- * @param {Array} polygon Set of points that describes the polygon
- * @param {Number} radius points radius
- * @param {String} color Points color
- */
-function drawPoints(ctx, points, radius = 6, color = "black") {
-  ctx.fillStyle = color;
-  points.forEach((pt) => {
+  /*
+   * Plots a polygon in the canvas
+   *
+   * @param {Object} ctx Canvas context
+   * @param {Array} polygon Set of points that describes the polygon
+   * @param {String} color Points color
+   */
+  function drawPolygon(ctx, polygon, color = "black") {
+    ctx.strokestyle = color;
+    pt0 = polygon[0];
     ctx.beginPath();
-    ctx.arc(pt[0], pt[1], radius, 0, 2 * Math.PI, 0);
-    ctx.fill();
-  });
-}
+    ctx.moveTo(pt0[0], pt0[1]);
+    polygon.slice(1).forEach((pt) => {
+      ctx.lineTo(pt[0], pt[1]);
+    });
+    ctx.closePath();
+    ctx.stroke();
+  }
 
-/*
- * Clears the canvas and sets a background color
- *
- * @param {Object} canvas Canvas object
- * @param {String} backgroundColor Points color
- */
-function resetCanvas(canvas, backgroundColor = "white") {
-  const ctx = canvas.getContext("2d");
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = backgroundColor;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-}
+  /*
+   * Plots points in the canvas
+   *
+   * @param {Object} ctx Canvas context
+   * @param {Array} polygon Set of points that describes the polygon
+   * @param {Number} radius points radius
+   * @param {String} color Points color
+   */
+  function drawPoints(ctx, points, radius = 6, color = "black") {
+    ctx.fillStyle = color;
+    points.forEach((pt) => {
+      ctx.beginPath();
+      ctx.arc(pt[0], pt[1], radius, 0, 2 * Math.PI, 0);
+      ctx.fill();
+    });
+  }
 
-/*
- * Plots the points and polygon into a blank canvas
- *
- * @param {Object} canvas Canvas object
- * @param {Array} polygon Set of points that describes the polygon
- * @param {Number} radius points radius
- * @param {String} color Points color
- * @param {String} backgroundColor Points color
- */
-function drawPolygonAndPoints(
-  canvas,
-  points,
-  polygon,
-  radius = 6,
-  color = "black",
-  backgroundColor = "white"
-) {
-  const ctx = canvas.getContext("2d");
-  const { width, height } = polygon.reduce(
-    (acc, v) => {
-      acc.width = acc.width < v[0] ? v[0] : acc.width;
-      acc.height = acc.height < v[1] ? v[1] : acc.height;
-      return acc;
-    },
-    { width: 0, height: 0 }
-  );
-  canvas.width = width;
-  canvas.height = height;
-  resetCanvas(canvas, backgroundColor);
-  drawPoints(ctx, points, radius, color);
-  drawPolygon(ctx, polygon, color);
-}
+  /*
+   * Clears the canvas and sets a background color
+   *
+   * @param {Object} canvas Canvas object
+   * @param {String} backgroundColor Points color
+   */
+  function resetCanvas(canvas, backgroundColor = "white") {
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = backgroundColor;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
+
+  /*
+   * Plots the points and polygon into a blank canvas
+   *
+   * @param {Object} canvas Canvas object
+   * @param {Array} polygon Set of points that describes the polygon
+   * @param {Number} radius points radius
+   * @param {String} color Points color
+   * @param {String} backgroundColor Points color
+   */
+  function drawPolygonAndPoints(
+    canvas,
+    points,
+    polygon,
+    radius = 6,
+    color = "black",
+    backgroundColor = "white"
+  ) {
+    const ctx = canvas.getContext("2d");
+    const { width, height } = polygon.reduce(
+      (acc, v) => {
+        acc.width = acc.width < v[0] ? v[0] : acc.width;
+        acc.height = acc.height < v[1] ? v[1] : acc.height;
+        return acc;
+      },
+      { width: 0, height: 0 }
+    );
+    canvas.width = width;
+    canvas.height = height;
+    resetCanvas(canvas, backgroundColor);
+    drawPoints(ctx, points, radius, color);
+    drawPolygon(ctx, polygon, color);
+  }
+
+  return {
+    movePoints,
+    randomInPolygon,
+    randomInGeoPolygon,
+    relaxPoints,
+    relaxNPoints,
+    relaxGeoPoints,
+    relaxNGeoPoints,
+    buildPolygon,
+    drawPolygon,
+    drawPoints,
+    resetCanvas,
+    drawPolygonAndPoints,
+  };
+})();
 
 (function (root, factory) {
   if (typeof define === "function" && define.amd) {
@@ -648,18 +676,5 @@ function drawPolygonAndPoints(
 })(typeof self !== "undefined" ? self : this, function () {
   // Use b in some fashion.
   // Just return a value to define the module export.    // This example returns an object, but the module    // can return a function as the exported value.
-  return {
-    movePoints,
-    randomInPolygon,
-    randomInGeoPolygon,
-    relaxPoints,
-    relaxNPoints,
-    relaxGeoPoints,
-    relaxNGeoPoints,
-    buildPolygon,
-    drawPolygon,
-    drawPoints,
-    resetCanvas,
-    drawPolygonAndPoints,
-  };
+  return ocdots;
 });

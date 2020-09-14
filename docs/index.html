@@ -213,8 +213,8 @@
       resetControls();
 
       function draw() {
-        drawPolygonAndPoints(canvas, points, polygon);
-        [points, momentum] = movePoints({
+        ocdots.drawPolygonAndPoints(canvas, points, polygon);
+        [points, momentum] = ocdots.movePoints({
           points,
           momentum,
           polygon,
@@ -267,7 +267,7 @@
         viscosity = VISCOSITY;
         attenuation = ATTENUATION;
         maxMomentum = MAXMOMENTUM;
-        points = randomInPolygon(N, polygon);
+        points = ocdots.randomInPolygon(N, polygon);
         momentum = points.map(() => [0, 0]);
         document.getElementById("baseForce").value = 7;
         document.getElementById("drag").value = drag;

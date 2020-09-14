@@ -112,7 +112,7 @@ In the browser import the script and then
 ```html
 <script src="node_modules/ocdots/ocdots.js"></script>
 <script>
-  movePoints(...);
+  ocdots.movePoints(...);
 </script>
 ```
 
