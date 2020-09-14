@@ -279,6 +279,8 @@ function randomInGeoPolygon(N, geoPolygon) {
  * iteration attenuating the movement.
  *
  * @param {Array} points The points to move
+ * @param {Array} momentum Initial momentum. [0, 0] for all points if
+ *      ommited
  * @param {Array} polygon Set of points that describes the polygon that
  *      contains the points. This polygon should be ordered (clockwise
  *      or anticlockwise) and closed i.e. first points equals the last
@@ -296,6 +298,7 @@ function randomInGeoPolygon(N, geoPolygon) {
  */
 function relaxPoints({
   points,
+  momentum,
   polygon,
   iterations,
   callback,
@@ -305,8 +308,8 @@ function relaxPoints({
   maxMomentum = MAXMOMENTUM,
   attenuation = ATTENUATION,
 }) {
-  let m = new Array(points.length).fill([0, 0]);
   let p = [...points];
+  let m = momentum == undefined ? p.map(() => [0, 0]) : [...momentum];
 
   let att = 1 + attenuation;
   for (let i = 0, attIter = att; i < iterations; i++, attIter *= att) {
