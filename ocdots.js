@@ -59,7 +59,6 @@ function movePoints({
 }) {
   let p = [...points];
   let m = [...momentum];
-  const N = points.length;
 
   // Calculate forces
   const pf = p.map((pt) => pointForces(pt, p));

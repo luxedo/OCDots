@@ -53,7 +53,6 @@ describe("Test public functions", () => {
   it("Creates N points inside polygon", () => {
     for (let i = 0; i < Ntests; i++) {
       const N = 10;
-      const polygon = trianglePolygon;
       const lower = Math.atan2(0, 1);
       const upper = Math.atan2(1, 1);
 
@@ -164,7 +163,7 @@ describe("Test public functions", () => {
     const N = 10;
     const iterations = 900;
     let cbCounter = 0;
-    const callback = (points) => {
+    const callback = () => {
       cbCounter++;
     };
     const pf = ocdots.relaxNPoints({
@@ -200,7 +199,6 @@ describe("Test public functions", () => {
   });
   it("Draws points into a canvas", () => {
     const canvas = createCanvas();
-    const ctx = canvas.getContext("2d");
     const N = 20;
     const points = ocdots.randomInPolygon(N, squarePolygon);
     ocdots.drawPolygonAndPoints(canvas, points, squarePolygon);
