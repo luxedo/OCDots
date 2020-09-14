@@ -153,7 +153,7 @@ function updateMomentum(mt, force, drag, viscosity, maxMomentum) {
   norm2 = norm2 != 0 ? norm2 : Infinity;
   const norm = Math.sqrt(norm2);
   let intensity = norm - drag * norm2;
-  intensity = intensity < viscosity ? intensity / 2: intensity;  // Not quite but good enough
+  intensity = intensity < viscosity ? intensity / 2 : intensity; // Not quite but good enough
   intensity = intensity > maxMomentum ? maxMomentum : intensity;
   intensity = intensity < 0 ? 1 : intensity;
   return [(intensity * mx) / norm, (intensity * my) / norm];
