@@ -5,16 +5,118 @@
     <title>OCDots</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <script src="ocdots.js"></script>
+    <link
+      rel="stylesheet"
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+      integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z"
+      crossorigin="anonymous"
+    />
   </head>
   <body>
-    <div>
-      <canvas id="canvas"></canvas>
+    <div class="container-fluid">
+      <div class="row mt-3">
+        <div class="col-sm-6 offset-sm-3 d-flex justify-content-center">
+          <h1>OCDots</h1>
+          <a class="ml-2" style="" href="https://github.com/luxedo/OCDots">
+            <img src="GitHub-Mark-32px.png" /><span></span>
+          </a>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-sm-6 offset-sm-3 d-flex justify-content-center">
+          <p>Shake'em like nobody's watching</p>
+        </div>
+      </div>
+      <div class="row mt-2">
+        <div class="col-sm-6 offset-sm-3 d-flex justify-content-center">
+          <canvas id="canvas"></canvas>
+        </div>
+      </div>
+      <div class="row mt-2">
+        <div class="col-sm-6 offset-sm-3 d-flex justify-content-center">
+          <label for="baseForce">Base Force</label>
+          <input
+            type="range"
+            class="form-control-range ml-1"
+            id="baseForce"
+            min="1"
+            max="20000"
+            step="100"
+            onchange="setValue('baseForce', this.value);"
+          />
+          <label for="drag" class="ml-2">Drag</label>
+          <input
+            type="range"
+            class="form-control-range ml-1"
+            id="drag"
+            min="0"
+            max="0.1"
+            step="0.01"
+            onchange="setValue('drag', this.value);"
+          />
+        </div>
+      </div>
+      <div class="row mt-2">
+        <div class="col-md-6 offset-md-3 d-flex justify-content-center">
+          <label for="viscosity">Viscosity</label>
+          <input
+            type="range"
+            class="form-control-range ml-1"
+            id="viscosity"
+            min="0"
+            max="10"
+            step="0.1"
+            onchange="setValue('viscosity', this.value);"
+          />
+          <label for="maxMomentum" class="ml-2">Max Momentum</label>
+          <input
+            type="range"
+            class="form-control-range ml-1"
+            id="maxMomentum"
+            min="1"
+            max="50"
+            step="1"
+            onchange="setValue('maxMomentum', this.value);"
+          />
+        </div>
+      </div>
+      <div class="row mt-2">
+        <div class="col-sm-6 offset-sm-3 d-flex justify-content-center">
+          <label for="N">Dots</label>
+          <input
+            type="number"
+            class="form-control ml-1"
+            style="max-width: 4em"
+            id="N"
+            max="300"
+            min="1"
+          />
+          <button class="btn btn-success ml-2" onclick="shakeem()">
+            Shake'em
+          </button>
+          <button class="btn btn-danger ml-2" onclick="reset()">Reset</button>
+        </div>
+      </div>
+      <div class="row mt-5 footer">
+        <div class="col-sm-6 offset-sm-3 text-center">
+          <p>
+            Copyright (c) 2020 Luiz Eduardo Amaral -
+            <a href="mailto:luizamaral306@gmail.com?Subject=OCDots">
+              &lt;luizamaral306@gmail.com&gt;
+            </a>
+            <br />
+            This software is under a
+            <a href="https://www.gnu.org/licenses/gpl-3.0.en.html">GNU GPL3</a>
+            license. Have fun!
+            <span style="font-size: 2em; vertical-align: baseline">😉</span>
+          </p>
+        </div>
+      </div>
     </div>
     <script>
       const canvas = document.getElementById("canvas");
       const ctx = canvas.getContext("2d");
 
-      const N = 21;
       const size = 500;
       const polygon = [
         [0, 0],
@@ -23,15 +125,69 @@
         [size, 0],
         [0, 0],
       ];
+
+      let N = 21;
+      let baseForce = 5000;
+      let drag = 0.01;
+      let viscosity = 0.01;
+      let attenuation = 0.01;
+      let maxMomentum = 20;
       let points = randomInPolygon(N, polygon);
       let momentum = points.map(() => [0, 0]);
 
       function draw() {
         drawPolygonAndPoints(canvas, points, polygon);
-        [points, momentum] = movePoints({ points, momentum, polygon });
+        [points, momentum] = movePoints({
+          points,
+          momentum,
+          polygon,
+          baseForce,
+          drag,
+          viscosity,
+          maxMomentum,
+          attenuation,
+        });
         window.requestAnimationFrame(draw);
       }
       draw();
+
+      function setValue(variable, value) {
+        switch (variable) {
+          case "baseForce":
+            baseForce = value;
+            break;
+          case "drag":
+            drag = value;
+            break;
+          case "viscosity":
+            viscosity = value;
+            break;
+          case "maxMomentum":
+            maxMomentum = value;
+            break;
+        }
+      }
+      function shakeem() {
+        const shakeMax = 40;
+        momentum = momentum.map((m) => [
+          m[0] + shakeMax * Math.random() - shakeMax / 2,
+          m[1] + shakeMax * Math.random() - shakeMax / 2,
+        ]);
+      }
+      function reset() {
+        points = randomInPolygon(N, polygon);
+        momentum = points.map(() => [0, 0]);
+      }
+
+      document.getElementById("baseForce").value = baseForce;
+      document.getElementById("drag").value = drag;
+      document.getElementById("viscosity").value = viscosity;
+      document.getElementById("maxMomentum").value = maxMomentum;
+      document.getElementById("N").value = N;
+      document.getElementById("N").addEventListener("change", (event) => {
+        N = event.srcElement.value;
+        reset();
+      });
     </script>
   </body>
 </html>

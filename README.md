@@ -6,6 +6,8 @@
 
 ![ocdots](docs/ocdots.gif)
 
+#### Check the [demo](https://luxedo.github.io/OCDots/)!
+
 ## Quick Start
 
 OCDots uses physics to maximize the distance between each point and
