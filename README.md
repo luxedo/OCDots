@@ -122,7 +122,7 @@ the file and import as you prefer. No extra dependencies are required.
 ## Usage
 
 Please check the functions signatures and description in the
-[source](https://raw.githubusercontent.com/luxedo/OCDots/master/ocdots.js).
+[source](https://github.com/luxedo/OCDots/blob/master/ocdots.js).
 
 A running example can be found [here](https://luxedo.github.io/OCDots/).
 

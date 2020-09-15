@@ -108,32 +108,40 @@ const ocdots = (() => {
   }
 
   /*
-   * Calculates forces on pt from polygon. The forces are a sum of vertex
-   * forces and wall forces.
+   * Calculates forces on pt from polygon. The forces are a weighted
+   * sum of wall forces. These weight decreases when there's two or
+   * more walls close together.
    *
    * @param {Array} pt The point to measure forces
    * @param {Array} polygon The polygons vertexes
+   * @param {Number} gaussDecay Gaussian function decay factor for
+   *    weighting the forces
    * @return {Array} force Sum of forces acting on pt
    */
-  function polygonForces(pt, polygon) {
-    const pf = polygon.slice(1).reduce(
-      (acc, v2, i1) => {
+  function polygonForces(pt, polygon, gaussDecay = 100) {
+    const pf = polygon
+      .slice(1)
+      .map((v2, i1) => {
         const v1 = polygon[i1];
         const wd = minDistanceToLine(pt, v1, v2);
         const wdm2 = Math.pow(wd[0], 2) + Math.pow(wd[1], 2);
         const wdm = Math.sqrt(wdm2);
         const wf = [-wd[0] / wdm / wdm2, -wd[1] / wdm / wdm2];
-
-        // const vd = [pt[0] - v1[0], pt[1] - v1[1]];
-        // const vdm2 = Math.pow(vd[0], 2) + Math.pow(vd[1], 2);
-        // const vdm = Math.sqrt(vdm2);
-        // const vf = [2*vd[0] / vdm / vdm2, 2*vd[1] / vdm / vdm2];
-
-        return [acc[0] + wf[0], acc[1] + wf[1]];
-        // return [acc[0] + wf[0] + vf[0], acc[1] + wf[1] + vf[1]];
-      },
-      [0, 0]
-    );
+        return { wf, wd };
+      })
+      .reduce(
+        (acc1, f1, idx1, arr) => {
+          const weight = arr.reduce((acc2, f2) => {
+            // Gaussian decay for the weights
+            const d2 =
+              Math.pow(f2.wd[0] - f1.wd[0], 2) +
+              Math.pow(f2.wd[1] - f1.wd[1], 2);
+            return acc2 + Math.exp(-d2 / gaussDecay);
+          }, 0);
+          return [acc1[0] + f1.wf[0] / weight, acc1[1] + f1.wf[1] / weight];
+        },
+        [0, 0]
+      );
     return [pf[0], pf[1]];
   }
 
@@ -177,7 +185,7 @@ const ocdots = (() => {
     if (
       Math.acos(
         (pv1[0] / npv1) * (v2v1[0] / nv2v1) +
-          (pv1[1] / npv1) * (nv2v1[1] / nv2v1)
+          (pv1[1] / npv1) * (v2v1[1] / nv2v1)
       ) >
       Math.PI / 2
     ) {
@@ -190,7 +198,7 @@ const ocdots = (() => {
     if (
       Math.acos(
         (pv2[0] / npv2) * (v1v2[0] / nv1v2) +
-          (pv2[1] / npv2) * (nv1v2[1] / nv1v2)
+          (pv2[1] / npv2) * (v1v2[1] / nv1v2)
       ) >
       Math.PI / 2
     ) {
@@ -202,10 +210,6 @@ const ocdots = (() => {
     const d = v1p[0] * n[0] + v1p[1] * n[1];
     return [v1p[0] - d * n[0], v1p[1] - d * n[1]];
   }
-
-  // function dot(p1, p2) {
-  //   return p1[0] * p2[0] + p1[1] * p2[1];
-  // }
 
   /*
    * Checks if the point pt is inside polygon.
