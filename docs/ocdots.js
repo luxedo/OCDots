@@ -20,6 +20,7 @@ const BASEFORCE = 5;
 const DRAG = 0.1;
 const VISCOSITY = 0.1;
 const MAXMOMENTUM = 10;
+const PARALLELFORCES = true;
 const ATTENUATION = 0.01;
 
 const ocdots = (() => {
@@ -58,7 +59,7 @@ const ocdots = (() => {
     drag = DRAG,
     viscosity = VISCOSITY,
     maxMomentum = MAXMOMENTUM,
-    parallelForces = true,
+    parallelForces = PARALLELFORCES,
   }) {
     let p = [...points];
     let m = [...momentum];
@@ -74,10 +75,10 @@ const ocdots = (() => {
     // Update momentum
     m = m.map((mt, i) => {
       const force = [
-        Math.pow(10, baseForce) * (pf[i][0] + (4 * N * bf[i][0]) / S),
-        Math.pow(10, baseForce) * (pf[i][1] + (4 * N * bf[i][1]) / S),
+        Math.pow(10, baseForce) * (pf[i][0] + (2 * N * bf[i][0]) / S),
+        Math.pow(10, baseForce) * (pf[i][1] + (2 * N * bf[i][1]) / S),
         // Polygon forces are normalized to it's total length and
-        // multiplied by 4N as if there's 4 charges in the walls
+        // multiplied by 2N as if there's 2 charges in the walls
         // for each point
       ];
       return updateMomentum(mt, force, drag, viscosity, maxMomentum);
@@ -132,7 +133,7 @@ const ocdots = (() => {
    *    as well.
    * @return {Array} force Sum of forces acting on pt
    */
-  function polygonForces(pt, polygon, parallelForces = true) {
+  function polygonForces(pt, polygon, parallelForces = PARALLELFORCES) {
     return polygon.slice(1).reduce(
       (acc, v2, i1) => {
         const v1 = polygon[i1];
@@ -151,18 +152,17 @@ const ocdots = (() => {
         thetaDiff = thetaDiff > Math.PI ? thetaDiff - 2 * Math.PI : thetaDiff;
 
         const modulus = (1 / nt) * Math.sin((1 / 2) * thetaDiff);
-        let direction;
-        if (parallelForces) {
-          const tv = Math.sin(thetaB) - Math.sin(thetaA); // Perpendicular fraction
-          const pv = -(Math.cos(thetaB) - Math.cos(thetaA)); // Parallel fraction
-          const dn = Math.sqrt(Math.pow(pv, 2) + Math.pow(tv, 2));
-          direction = [
-            (tv * t[0]) / nt / dn + (pv * p[0]) / nt / dn,
-            (tv * t[1]) / nt / dn + (pv * p[1]) / nt / dn,
-          ];
-        } else {
-          direction = [t[0] / nt, t[1] / nt];
-        }
+
+        const tv = Math.sin(thetaB) - Math.sin(thetaA); // Perpendicular fraction
+        const pv = -(Math.cos(thetaB) - Math.cos(thetaA)); // Parallel fraction
+        const dn = Math.sqrt(Math.pow(pv, 2) + Math.pow(tv, 2));
+
+        const direction = parallelForces
+          ? [
+              (tv * t[0]) / nt / dn + (pv * p[0]) / nt / dn,
+              (tv * t[1]) / nt / dn + (pv * p[1]) / nt / dn,
+            ]
+          : [(tv * t[0]) / nt / dn, (tv * t[1]) / nt / dn];
         const f = [modulus * direction[0], modulus * direction[1]];
         return [acc[0] + f[0], acc[1] + f[1]];
       },
@@ -320,7 +320,7 @@ const ocdots = (() => {
     drag = DRAG,
     viscosity = VISCOSITY,
     maxMomentum = MAXMOMENTUM,
-    parallelForces = true,
+    parallelForces = PARALLELFORCES,
     attenuation = ATTENUATION,
   }) {
     let p = [...points];
@@ -384,7 +384,7 @@ const ocdots = (() => {
     drag = DRAG,
     viscosity = VISCOSITY,
     maxMomentum = MAXMOMENTUM,
-    parallelForces = true,
+    parallelForces = PARALLELFORCES,
     attenuation = ATTENUATION,
   }) {
     const points = randomInPolygon(N, polygon);
@@ -435,7 +435,7 @@ const ocdots = (() => {
     drag = DRAG,
     viscosity = VISCOSITY,
     maxMomentum = MAXMOMENTUM,
-    parallelForces = true,
+    parallelForces = PARALLELFORCES,
     attenuation = ATTENUATION,
   }) {
     const { polygon, minLat, minLng, delta } = buildPolygon(
@@ -500,7 +500,7 @@ const ocdots = (() => {
     drag = DRAG,
     viscosity = VISCOSITY,
     maxMomentum = MAXMOMENTUM,
-    parallelForces = true,
+    parallelForces = PARALLELFORCES,
     attenuation = ATTENUATION,
   }) {
     const geoPoints = randomInGeoPolygon(N, geoPolygon);

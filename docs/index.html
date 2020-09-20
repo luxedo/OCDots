@@ -131,6 +131,18 @@
                 class="mx-1"
               ></label>
             </div>
+            <div class="d-flex flex-column mx-1 align-self-start">
+              <div>
+                <label for="parallelForces" class="ml-2">Parallel Forces</label>
+              </div>
+              <div class="m-auto">
+                <input
+                  type="checkbox"
+                  id="parallelForces"
+                  onchange="setValue('parallelForces', this.checked);"
+                />
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -272,6 +284,7 @@
         viscosity,
         attenuation,
         maxMomentum,
+        parallelForces,
         points,
         momentum,
         polygon;
@@ -288,7 +301,7 @@
           drag,
           viscosity,
           maxMomentum,
-          attenuation,
+          parallelForces,
         });
         window.requestAnimationFrame(draw);
       }
@@ -307,6 +320,9 @@
             break;
           case "maxMomentum":
             maxMomentum = value;
+            break;
+          case "parallelForces":
+            parallelForces = value;
             break;
         }
         updateRange();
@@ -330,6 +346,7 @@
         viscosity = VISCOSITY;
         attenuation = ATTENUATION;
         maxMomentum = MAXMOMENTUM;
+        parallelForces = PARALLELFORCES;
         polygon = polygons[Math.floor(Math.random() * polygons.length)];
         resetPoints();
         document.getElementById("baseForce").value = BASEFORCE;
@@ -337,6 +354,7 @@
         document.getElementById("viscosity").value = viscosity;
         document.getElementById("maxMomentum").value = maxMomentum;
         document.getElementById("N").value = N;
+        document.getElementById("parallelForces").checked = parallelForces;
         updateRange();
       }
       function updateRange() {
