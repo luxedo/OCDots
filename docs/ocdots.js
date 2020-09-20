@@ -16,10 +16,10 @@
 
 // Default values
 const SIMPLIFYPOLYGON = 20;
-const BASEFORCE = 5000;
-const DRAG = 0.01;
-const VISCOSITY = 0.01;
-const MAXMOMENTUM = 5;
+const BASEFORCE = 5;
+const DRAG = 0.1;
+const VISCOSITY = 0.1;
+const MAXMOMENTUM = 10;
 const ATTENUATION = 0.01;
 
 const ocdots = (() => {
@@ -30,8 +30,7 @@ const ocdots = (() => {
    *
    * The points moves according to it's momentum up to maxMomentum.
    * Drag reduces the momentum with the square of the momentum.
-   * Viscosity lowers the momentum when the momentum value is lower
-   * thatn viscosity.
+   * Viscosity lowers the momentum of points with high forces.
    *
    * Runs one iteration
    *
@@ -46,6 +45,8 @@ const ocdots = (() => {
    * @param {Number} drag The drag coeficient
    * @param {Number} viscosity The viscosity coeficient
    * @param {Number} maxMomentum Maximum momentum for each point
+   * @param {Boolean} parallelForces Sum line segmen parallel forces
+   *    as well.
    * @return {Array, Array} points,momentum Updated points and momentum
    *      arrays
    */
@@ -57,19 +58,27 @@ const ocdots = (() => {
     drag = DRAG,
     viscosity = VISCOSITY,
     maxMomentum = MAXMOMENTUM,
+    parallelForces = true,
   }) {
     let p = [...points];
     let m = [...momentum];
+    const N = points.length;
+    const S = polygon.reduce((acc, cur) => {
+      return acc + Math.sqrt(Math.pow(cur[0], 2) + Math.pow(cur[1], 2));
+    }, 0);
 
     // Calculate forces
     const pf = p.map((pt) => pointForces(pt, p));
-    const bf = p.map((pt) => polygonForces(pt, polygon));
+    const bf = p.map((pt) => polygonForces(pt, polygon, parallelForces));
 
     // Update momentum
     m = m.map((mt, i) => {
       const force = [
-        baseForce * (pf[i][0] + bf[i][0]),
-        baseForce * (pf[i][1] + bf[i][1]),
+        Math.pow(10, baseForce) * (pf[i][0] + (4 * N * bf[i][0]) / S),
+        Math.pow(10, baseForce) * (pf[i][1] + (4 * N * bf[i][1]) / S),
+        // Polygon forces are normalized to it's total length and
+        // multiplied by 4N as if there's 4 charges in the walls
+        // for each point
       ];
       return updateMomentum(mt, force, drag, viscosity, maxMomentum);
     });
@@ -78,8 +87,8 @@ const ocdots = (() => {
     p = p.map((pt, i) => {
       const px = pt[0] + m[i][0];
       const py = pt[1] + m[i][1];
-      if (checkInbounds([px, py], polygon)) return [px, py];
-      return pt;
+      if (!checkInbounds([px, py], polygon)) return pt;
+      return [px, py];
     });
     return [p, m];
   }
@@ -108,41 +117,74 @@ const ocdots = (() => {
   }
 
   /*
-   * Calculates forces on pt from polygon. The forces are a weighted
-   * sum of wall forces. These weight decreases when there's two or
-   * more walls close together.
+   * Calculates forces on pt from polygon. The forces are the integral
+   * of the forces for each line segment for a charged wire as in:
+   * https://aapt.scitation.org/doi/full/10.1119/1.4906421
+   *
+   * The default behavior is to sum perpendicular and parallel forces
+   * for each line segment, setting `parallelForces` to `false` sums
+   * only perpendicular forces, but this may lead to instability
+   * because of nonlinearity in the forces for concave polygons.
    *
    * @param {Array} pt The point to measure forces
    * @param {Array} polygon The polygons vertexes
-   * @param {Number} gaussDecay Gaussian function decay factor for
-   *    weighting the forces
+   * @param {Boolean} parallelForces Sum line segmen parallel forces
+   *    as well.
    * @return {Array} force Sum of forces acting on pt
    */
-  function polygonForces(pt, polygon, gaussDecay = 100) {
-    const pf = polygon
-      .slice(1)
-      .map((v2, i1) => {
+  function polygonForces(pt, polygon, parallelForces = true) {
+    return polygon.slice(1).reduce(
+      (acc, v2, i1) => {
         const v1 = polygon[i1];
-        const wd = minDistanceToLine(pt, v1, v2);
-        const wdm2 = Math.pow(wd[0], 2) + Math.pow(wd[1], 2);
-        const wdm = Math.sqrt(wdm2);
-        const wf = [-wd[0] / wdm / wdm2, -wd[1] / wdm / wdm2];
-        return { wf, wd };
-      })
-      .reduce(
-        (acc1, f1, idx1, arr) => {
-          const weight = arr.reduce((acc2, f2) => {
-            // Gaussian decay for the weights
-            const d2 =
-              Math.pow(f2.wd[0] - f1.wd[0], 2) +
-              Math.pow(f2.wd[1] - f1.wd[1], 2);
-            return acc2 + Math.exp(-d2 / gaussDecay);
-          }, 0);
-          return [acc1[0] + f1.wf[0] / weight, acc1[1] + f1.wf[1] / weight];
-        },
-        [0, 0]
-      );
-    return [pf[0], pf[1]];
+
+        const t = perpendicularToLine(pt, v1, v2);
+        const p = [-t[1], t[0]];
+        const nt = Math.sqrt(Math.pow(t[0], 2) + Math.pow(t[1], 2));
+
+        const v1pt = [pt[0] - v1[0], pt[1] - v1[1]];
+        const v2pt = [pt[0] - v2[0], pt[1] - v2[1]];
+        const thetaA = Math.atan2(v1pt[1], v1pt[0]) - Math.atan2(t[1], t[0]);
+        const thetaB = Math.atan2(v2pt[1], v2pt[0]) - Math.atan2(t[1], t[0]);
+        // Align thetaDiff between -PI and +PI
+        let thetaDiff = thetaB - thetaA;
+        thetaDiff = thetaDiff <= Math.PI ? thetaDiff + 2 * Math.PI : thetaDiff;
+        thetaDiff = thetaDiff > Math.PI ? thetaDiff - 2 * Math.PI : thetaDiff;
+
+        const modulus = (1 / nt) * Math.sin((1 / 2) * thetaDiff);
+        let direction;
+        if (parallelForces) {
+          const tv = Math.sin(thetaB) - Math.sin(thetaA); // Perpendicular fraction
+          const pv = -(Math.cos(thetaB) - Math.cos(thetaA)); // Parallel fraction
+          const dn = Math.sqrt(Math.pow(pv, 2) + Math.pow(tv, 2));
+          direction = [
+            (tv * t[0]) / nt / dn + (pv * p[0]) / nt / dn,
+            (tv * t[1]) / nt / dn + (pv * p[1]) / nt / dn,
+          ];
+        } else {
+          direction = [t[0] / nt, t[1] / nt];
+        }
+        const f = [modulus * direction[0], modulus * direction[1]];
+        return [acc[0] + f[0], acc[1] + f[1]];
+      },
+      [0, 0]
+    );
+  }
+
+  /*
+   * Returns the perpendicular line to segment v1 -> v2.
+   *
+   * @param {Array} pt Point to calculate perpendicular to
+   * @param {Array} v1 Line segment vertetx 1
+   * @param {Array} v2 Line segment vertetx 2
+   * @return {Array} p Perpendicular vector
+   */
+  function perpendicularToLine(pt, v1, v2) {
+    const v1v2 = [v1[0] - v2[0], v1[1] - v2[1]];
+    const nv1v2 = Math.sqrt(Math.pow(v1v2[0], 2) + Math.pow(v1v2[1], 2));
+    const v1p = [v1[0] - pt[0], v1[1] - pt[1]];
+    const n = [v1v2[0] / nv1v2, v1v2[1] / nv1v2];
+    const d = v1p[0] * n[0] + v1p[1] * n[1];
+    return [v1p[0] - d * n[0], v1p[1] - d * n[1]];
   }
 
   /*
@@ -158,57 +200,17 @@ const ocdots = (() => {
   function updateMomentum(mt, force, drag, viscosity, maxMomentum) {
     const mx = force[0] + mt[0];
     const my = force[1] + mt[1];
-    let norm2 = Math.pow(mx, 2) + Math.pow(my, 2);
-    norm2 = norm2 != 0 ? norm2 : Infinity;
+    const norm2 = Math.pow(mx, 2) + Math.pow(my, 2);
     const norm = Math.sqrt(norm2);
     let intensity = norm - drag * norm2;
-    intensity = intensity < viscosity ? intensity / 2 : intensity; // Not quite but good enough
     intensity = intensity > maxMomentum ? maxMomentum : intensity;
-    intensity = intensity < 0 ? 1 : intensity;
+    intensity =
+      intensity < 0
+        ? viscosity == 0
+          ? maxMomentum
+          : maxMomentum * Math.exp(-viscosity) // High forces viscosity
+        : intensity;
     return [(intensity * mx) / norm, (intensity * my) / norm];
-  }
-
-  /*
-   * Calculates the minimum distance from pt to the line segment defined
-   * by vertexes v1 and v2.
-   *
-   * @param {Array} pt The point to measure forces
-   * @param {Array} v1 Line vertex #1
-   * @param {Array} v2 Line vertex #2
-   * @return {Array} d Distance between pt and the line v1->v2
-   */
-  function minDistanceToLine(pt, v1, v2) {
-    const pv1 = [pt[0] - v1[0], pt[1] - v1[1]];
-    const npv1 = Math.sqrt(Math.pow(pv1[0], 2) + Math.pow(pv1[1], 2));
-    const v2v1 = [v2[0] - v1[0], v2[1] - v1[1]];
-    const nv2v1 = Math.sqrt(Math.pow(v2v1[0], 2) + Math.pow(v2v1[1], 2));
-    if (
-      Math.acos(
-        (pv1[0] / npv1) * (v2v1[0] / nv2v1) +
-          (pv1[1] / npv1) * (v2v1[1] / nv2v1)
-      ) >
-      Math.PI / 2
-    ) {
-      return [-pv1[0], -pv1[1]];
-    }
-    const pv2 = [pt[0] - v2[0], pt[1] - v2[1]];
-    const npv2 = Math.sqrt(Math.pow(pv2[0], 2) + Math.pow(pv2[1], 2));
-    const v1v2 = [v1[0] - v2[0], v1[1] - v2[1]];
-    const nv1v2 = Math.sqrt(Math.pow(v1v2[0], 2) + Math.pow(v1v2[1], 2));
-    if (
-      Math.acos(
-        (pv2[0] / npv2) * (v1v2[0] / nv1v2) +
-          (pv2[1] / npv2) * (v1v2[1] / nv1v2)
-      ) >
-      Math.PI / 2
-    ) {
-      return [-pv2[0], -pv2[1]];
-    }
-
-    const v1p = [v1[0] - pt[0], v1[1] - pt[1]];
-    const n = [v1v2[0] / nv1v2, v1v2[1] / nv1v2];
-    const d = v1p[0] * n[0] + v1p[1] * n[1];
-    return [v1p[0] - d * n[0], v1p[1] - d * n[1]];
   }
 
   /*
@@ -301,6 +303,8 @@ const ocdots = (() => {
    * @param {Number} drag The drag coeficient
    * @param {Number} viscosity The viscosity coeficient
    * @param {Number} maxMomentum Maximum momentum for each point
+   * @param {Boolean} parallelForces Sum line segmen parallel forces
+   *    as well.
    * @param {Function} callback Callback function to run at every
    *      iteration (optional). Callback args: points, momentum, polygon,
    *      baseForce, currentDrag, viscosity, maxMomentum
@@ -316,6 +320,7 @@ const ocdots = (() => {
     drag = DRAG,
     viscosity = VISCOSITY,
     maxMomentum = MAXMOMENTUM,
+    parallelForces = true,
     attenuation = ATTENUATION,
   }) {
     let p = [...points];
@@ -331,6 +336,7 @@ const ocdots = (() => {
         drag: drag * attIter,
         viscosity,
         maxMomentum,
+        parallelForces,
       });
       if (callback != undefined) {
         callback(
@@ -361,6 +367,8 @@ const ocdots = (() => {
    * @param {Number} drag The drag coeficient
    * @param {Number} viscosity The viscosity coeficient
    * @param {Number} maxMomentum Maximum momentum for each point
+   * @param {Boolean} parallelForces Sum line segmen parallel forces
+   *    as well.
    * @param {Number} attenuation Rate of attenuation
    *      iteration (optional). Callback args: points, momentum, polygon,
    *      baseForce, currentDrag, viscosity, maxMomentum
@@ -376,6 +384,7 @@ const ocdots = (() => {
     drag = DRAG,
     viscosity = VISCOSITY,
     maxMomentum = MAXMOMENTUM,
+    parallelForces = true,
     attenuation = ATTENUATION,
   }) {
     const points = randomInPolygon(N, polygon);
@@ -388,6 +397,7 @@ const ocdots = (() => {
       drag,
       viscosity,
       maxMomentum,
+      parallelForces,
       attenuation,
     });
   }
@@ -406,6 +416,8 @@ const ocdots = (() => {
    * @param {Number} drag The drag coeficient
    * @param {Number} viscosity The viscosity coeficient
    * @param {Number} maxMomentum Maximum momentum for each point
+   * @param {Boolean} parallelForces Sum line segmen parallel forces
+   *    as well.
    * @param {Number} attenuation Rate of attenuation
    *      iteration. Callback args: points, momentum, polygon, baseForce,
    *      currentDrag, viscosity, maxMomentum
@@ -423,6 +435,7 @@ const ocdots = (() => {
     drag = DRAG,
     viscosity = VISCOSITY,
     maxMomentum = MAXMOMENTUM,
+    parallelForces = true,
     attenuation = ATTENUATION,
   }) {
     const { polygon, minLat, minLng, delta } = buildPolygon(
@@ -442,6 +455,7 @@ const ocdots = (() => {
       drag,
       viscosity,
       maxMomentum,
+      parallelForces,
       attenuation,
     });
     return {
@@ -467,6 +481,8 @@ const ocdots = (() => {
    * @param {Number} drag The drag coeficient
    * @param {Number} viscosity The viscosity coeficient
    * @param {Number} maxMomentum Maximum momentum for each point
+   * @param {Boolean} parallelForces Sum line segmen parallel forces
+   *    as well.
    * @param {Number} attenuation Rate of attenuation
    *      iteration. Callback args: points, momentum, polygon, baseForce,
    *      currentDrag, viscosity, maxMomentum
@@ -484,6 +500,7 @@ const ocdots = (() => {
     drag = DRAG,
     viscosity = VISCOSITY,
     maxMomentum = MAXMOMENTUM,
+    parallelForces = true,
     attenuation = ATTENUATION,
   }) {
     const geoPoints = randomInGeoPolygon(N, geoPolygon);
@@ -498,6 +515,7 @@ const ocdots = (() => {
       drag,
       viscosity,
       maxMomentum,
+      parallelForces,
       attenuation,
     });
   }
@@ -643,8 +661,6 @@ const ocdots = (() => {
       },
       { width: 0, height: 0 }
     );
-    canvas.width = width;
-    canvas.height = height;
     resetCanvas(canvas, backgroundColor);
     drawPoints(ctx, points, radius, color);
     drawPolygon(ctx, polygon, color);

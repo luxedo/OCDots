@@ -110,7 +110,7 @@ ocdots.movePoints(...);
 In the browser import the script and then
 
 ```html
-<script src="node_modules/ocdots/ocdots.js"></script>
+<script src="node_modules/ocdots/docs/ocdots.js"></script>
 <script>
   ocdots.movePoints(...);
 </script>
@@ -128,7 +128,7 @@ A running example can be found [here](https://luxedo.github.io/OCDots/).
 
 ## License
 
-> SPOS - Small Payload Object Serializer
+> OCDots
 > Copyright (C) 2020 Luiz Eduardo Amaral <luizamaral306@gmail.com>
 >
 > This program is free software: you can redistribute it and/or modify

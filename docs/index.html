@@ -67,7 +67,8 @@
         <div
           class="col-lg-4 offset-lg-4 col-sm-6 offset-sm-3 d-flex justify-content-center"
         >
-          <canvas id="canvas" class="w-100 mx-5"></canvas>
+          <!-- <canvas id="canvas" class="w-100 mx-5"></canvas> -->
+          <canvas id="canvas" class="mx-5"></canvas>
         </div>
       </div>
       <div class="row mt-2">
@@ -106,7 +107,7 @@
                 class="form-control-range ml-1"
                 id="viscosity"
                 min="0"
-                max="20"
+                max="2"
                 step="0.1"
                 onchange="setValue('viscosity', this.value);"
               />
@@ -163,7 +164,7 @@
                 </button>
                 <button
                   class="btn btn-danger mx-2 px-4 align-self-end"
-                  onclick="reset()"
+                  onclick="resetPoints()"
                 >
                   Reset
                 </button>
@@ -191,9 +192,11 @@
     <script>
       const size = 500;
       const canvas = document.getElementById("canvas");
+      canvas.width = size;
+      canvas.style.width = size;
+      canvas.height = size;
+      canvas.style.height = size;
       const ctx = canvas.getContext("2d");
-      ctx.canvas.width = size;
-      ctx.canvas.height = size;
 
       const polygons = [
         // square
@@ -223,13 +226,13 @@
         ],
         // hexagon - good enough?
         [
-          [size / 4, size / 10],
+          [size / 4, 0],
           [0, size / 2],
-          [size / 4, (9 * size) / 10],
-          [(3 * size) / 4, (9 * size) / 10],
+          [size / 4, size],
+          [(3 * size) / 4, size],
           [size, size / 2],
-          [(3 * size) / 4, size / 10],
-          [size / 4, size / 10],
+          [(3 * size) / 4, 0],
+          [size / 4, 0],
         ],
         // octagon
         [
@@ -261,7 +264,7 @@
         ],
       ];
 
-      const DEFAULTN = 24;
+      const DEFAULTN = 21;
 
       let N,
         baseForce,
@@ -294,10 +297,7 @@
       function setValue(variable, value) {
         switch (variable) {
           case "baseForce":
-            const v =
-              Math.pow(10, Math.floor(value / 2)) * (value % 2 == 0 ? 1 : 5);
-
-            baseForce = v;
+            baseForce = value;
             break;
           case "drag":
             drag = value;
@@ -318,7 +318,7 @@
           m[1] + shakeMax * Math.random() - shakeMax / 2,
         ]);
       }
-      function reset() {
+      function resetPoints() {
         points = ocdots.randomInPolygon(N, polygon);
         momentum = points.map(() => [0, 0]);
       }
@@ -331,9 +331,8 @@
         attenuation = ATTENUATION;
         maxMomentum = MAXMOMENTUM;
         polygon = polygons[Math.floor(Math.random() * polygons.length)];
-        points = ocdots.randomInPolygon(N, polygon);
-        momentum = points.map(() => [0, 0]);
-        document.getElementById("baseForce").value = 7;
+        resetPoints();
+        document.getElementById("baseForce").value = BASEFORCE;
         document.getElementById("drag").value = drag;
         document.getElementById("viscosity").value = viscosity;
         document.getElementById("maxMomentum").value = maxMomentum;
@@ -349,7 +348,7 @@
 
       document.getElementById("N").addEventListener("change", (event) => {
         N = event.srcElement.value;
-        reset();
+        resetPoints();
       });
     </script>
   </body>

@@ -203,4 +203,25 @@ describe("Test public functions", () => {
     const points = ocdots.randomInPolygon(N, squarePolygon);
     ocdots.drawPolygonAndPoints(canvas, points, squarePolygon);
   });
+  it("Runs without parallelForces", () => {
+    const N = 10;
+    const iterations = 900;
+    const width = 600;
+    const pf = ocdots.relaxNGeoPoints({
+      N,
+      geoPolygon: squareGeoPolygon,
+      width,
+      iterations,
+      parallelForces: false,
+    });
+    pf.points.forEach((pt1, idx1, arr) => {
+      const minDist = arr.reduce((acc, pt2, idx2) => {
+        const dist = Math.sqrt(
+          Math.pow(pt2[0] - pt1[0], 2) + Math.pow(pt2[1] - pt1[1], 2)
+        );
+        return idx2 != idx1 ? (dist < acc ? dist : acc) : acc;
+      }, Infinity);
+      assert.isAtLeast(minDist, 100);
+    });
+  });
 });

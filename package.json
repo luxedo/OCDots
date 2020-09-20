@@ -2,11 +2,11 @@
   "name": "ocdots",
   "version": "1.2.0-beta",
   "description": "OCDots is a library for creating evenly distributed points inside a polygon",
-  "main": "ocdots.js",
+  "main": "docs/ocdots.js",
   "scripts": {
     "dev": "npm install && npm link . && npm link ocdots",
     "test": "jest --coverage",
-    "pretty": "prettier --write \"README.md\" \"ocdots.js\" \"test/**/*.js\" \"docs/**/*.js\" \"docs/**/*.html\""
+    "pretty": "prettier --write \"README.md\" \"test/**/*.js\" \"docs/**/*.js\" \"docs/**/*.html\""
   },
   "repository": {
     "type": "git",
