@@ -88,7 +88,11 @@ const ocdots = (() => {
     p = p.map((pt, i) => {
       const px = pt[0] + m[i][0];
       const py = pt[1] + m[i][1];
-      if (!checkInbounds([px, py], polygon)) return pt;
+      if (!checkInbounds([px, py], polygon)) {
+        m[i][0] = 0;
+        m[i][1] = 1;
+        return pt;
+      }
       return [px, py];
     });
     return [p, m];
