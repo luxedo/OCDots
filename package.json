@@ -1,6 +1,6 @@
 {
   "name": "ocdots",
-  "version": "1.2.2-beta",
+  "version": "1.2.3-beta",
   "description": "OCDots is a library for creating evenly distributed points inside a polygon",
   "main": "docs/ocdots.js",
   "files": "docs/ocdots.js",
