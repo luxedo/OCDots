@@ -262,9 +262,9 @@ const ocdots = (() => {
       },
       {
         xMin: Infinity,
-        xMax: 0,
+        xMax: -Infinity,
         yMin: Infinity,
-        yMax: 0,
+        yMax: -Infinity,
       }
     );
     const deltaX = xMax - xMin;

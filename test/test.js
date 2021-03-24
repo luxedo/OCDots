@@ -139,13 +139,55 @@ describe("Test public functions", () => {
       assert.isAtLeast(minDist, 100);
     });
   });
-  it("Runs several iterations for N geo points", () => {
+  it("Runs several iterations for N geo points 1", () => {
     const N = 10;
     const iterations = 900;
     const width = 600;
     const pf = ocdots.relaxNGeoPoints({
       N,
       geoPolygon: squareGeoPolygon,
+      width,
+      iterations,
+    });
+    pf.points.forEach((pt1, idx1, arr) => {
+      const minDist = arr.reduce((acc, pt2, idx2) => {
+        const dist = Math.sqrt(
+          Math.pow(pt2[0] - pt1[0], 2) + Math.pow(pt2[1] - pt1[1], 2)
+        );
+        return idx2 != idx1 ? (dist < acc ? dist : acc) : acc;
+      }, Infinity);
+      assert.isAtLeast(minDist, 100);
+    });
+  });
+  it("Runs several iterations for N geo points 2", () => {
+    const N = 10;
+    const iterations = 900;
+    const width = 600;
+    const geoPolygon = [
+      {
+        lng: -47.07848250737148,
+        lat: -22.82010653965609,
+      },
+      {
+        lng: -47.078580408000526,
+        lat: -22.82000579483017,
+      },
+      {
+        lng: -47.0783591257568,
+        lat: -22.81982593731758,
+      },
+      {
+        lng: -47.07826390733677,
+        lat: -22.81992853647758,
+      },
+      {
+        lng: -47.07848250737148,
+        lat: -22.82010653965609,
+      },
+    ];
+    const pf = ocdots.relaxNGeoPoints({
+      N,
+      geoPolygon: geoPolygon,
       width,
       iterations,
     });
