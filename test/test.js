@@ -92,6 +92,7 @@ describe("Test public functions", () => {
     const pf = ocdots.relaxPoints({
       points,
       polygon: squarePolygon,
+      baseForce: 6,
       iterations,
     });
     pf.forEach((pt1, idx1, arr) => {
@@ -101,13 +102,18 @@ describe("Test public functions", () => {
         );
         return idx2 != idx1 ? (dist < acc ? dist : acc) : acc;
       }, Infinity);
-      assert.isAtLeast(minDist, 100);
+      assert.isAtLeast(minDist, 80);
     });
   });
   it("Runs several iterations for N points", () => {
     const N = 10;
     const iterations = 900;
-    const pf = ocdots.relaxNPoints({ N, polygon: squarePolygon, iterations });
+    const pf = ocdots.relaxNPoints({
+      N,
+      polygon: squarePolygon,
+      baseForce: 6,
+      iterations,
+    });
     pf.forEach((pt1, idx1, arr) => {
       let minDist = arr.reduce((acc, pt2, idx2) => {
         const dist = Math.sqrt(
@@ -115,7 +121,7 @@ describe("Test public functions", () => {
         );
         return idx2 != idx1 ? (dist < acc ? dist : acc) : acc;
       }, Infinity);
-      assert.isAtLeast(minDist, 100);
+      assert.isAtLeast(minDist, 80);
     });
   });
   it("Runs several iterations for geo points", () => {
@@ -126,6 +132,7 @@ describe("Test public functions", () => {
     const pf = ocdots.relaxGeoPoints({
       geoPoints,
       geoPolygon: squareGeoPolygon,
+      baseForce: 6,
       width,
       iterations,
     });
@@ -136,7 +143,7 @@ describe("Test public functions", () => {
         );
         return idx2 != idx1 ? (dist < acc ? dist : acc) : acc;
       }, Infinity);
-      assert.isAtLeast(minDist, 100);
+      assert.isAtLeast(minDist, 80);
     });
   });
   it("Runs several iterations for N geo points 1", () => {
@@ -146,6 +153,7 @@ describe("Test public functions", () => {
     const pf = ocdots.relaxNGeoPoints({
       N,
       geoPolygon: squareGeoPolygon,
+      baseForce: 6,
       width,
       iterations,
     });
@@ -156,7 +164,7 @@ describe("Test public functions", () => {
         );
         return idx2 != idx1 ? (dist < acc ? dist : acc) : acc;
       }, Infinity);
-      assert.isAtLeast(minDist, 100);
+      assert.isAtLeast(minDist, 80);
     });
   });
   it("Runs several iterations for N geo points 2", () => {
@@ -188,6 +196,7 @@ describe("Test public functions", () => {
     const pf = ocdots.relaxNGeoPoints({
       N,
       geoPolygon: geoPolygon,
+      baseForce: 6,
       width,
       iterations,
     });
@@ -198,7 +207,7 @@ describe("Test public functions", () => {
         );
         return idx2 != idx1 ? (dist < acc ? dist : acc) : acc;
       }, Infinity);
-      assert.isAtLeast(minDist, 100);
+      assert.isAtLeast(minDist, 80);
     });
   });
   it("Runs the callback after every iteration of relaxPoints", () => {
@@ -211,6 +220,7 @@ describe("Test public functions", () => {
     const pf = ocdots.relaxNPoints({
       N,
       polygon: squarePolygon,
+      baseForce: 6,
       iterations,
       callback,
     });
@@ -221,14 +231,19 @@ describe("Test public functions", () => {
         );
         return idx2 != idx1 ? (dist < acc ? dist : acc) : acc;
       }, Infinity);
-      assert.isAtLeast(minDist, 100);
+      assert.isAtLeast(minDist, 80);
     });
     assert.equal(cbCounter, iterations);
   });
   it("Runs several iterations for N points for a concave polygon", () => {
     const N = 10;
     const iterations = 900;
-    const pf = ocdots.relaxNPoints({ N, polygon: concavePolygon, iterations });
+    const pf = ocdots.relaxNPoints({
+      N,
+      polygon: concavePolygon,
+      iterations,
+      baseForce: 6,
+    });
     pf.forEach((pt1, idx1, arr) => {
       const minDist = arr.reduce((acc, pt2, idx2) => {
         const dist = Math.sqrt(
@@ -252,6 +267,7 @@ describe("Test public functions", () => {
     const pf = ocdots.relaxNGeoPoints({
       N,
       geoPolygon: squareGeoPolygon,
+      baseForce: 6,
       width,
       iterations,
       parallelForces: false,
@@ -263,7 +279,7 @@ describe("Test public functions", () => {
         );
         return idx2 != idx1 ? (dist < acc ? dist : acc) : acc;
       }, Infinity);
-      assert.isAtLeast(minDist, 100);
+      assert.isAtLeast(minDist, 80);
     });
   });
 });

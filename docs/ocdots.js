@@ -16,10 +16,10 @@
 
 // Default values
 const SIMPLIFYPOLYGON = 20;
-const BASEFORCE = 5;
+const BASEFORCE = 4;
 const DRAG = 0.1;
 const VISCOSITY = 0.1;
-const MAXMOMENTUM = 10;
+const MAXMOMENTUM = 5;
 const PARALLELFORCES = true;
 const ATTENUATION = 0.01;
 
@@ -64,6 +64,14 @@ const ocdots = (() => {
     let p = [...points];
     let m = [...momentum];
     const N = points.length;
+
+    if (
+      polygon[0][0] != polygon[polygon.length - 1][0] ||
+      polygon[0][1] != polygon[polygon.length - 1][1]
+    ) {
+      polygon.push(polygon[0]);
+    }
+
     const S = polygon.reduce((acc, cur) => {
       return acc + Math.sqrt(Math.pow(cur[0], 2) + Math.pow(cur[1], 2));
     }, 0);
@@ -90,7 +98,7 @@ const ocdots = (() => {
       const py = pt[1] + m[i][1];
       if (!checkInbounds([px, py], polygon)) {
         m[i][0] = 0;
-        m[i][1] = 1;
+        m[i][1] = 0;
         return pt;
       }
       return [px, py];
@@ -563,7 +571,13 @@ const ocdots = (() => {
               ) > simplifyPolygon
         );
       }, true);
-    polygon = sortPolygon(polygon);
+    // polygon = sortPolygon(polygon);
+    if (
+      polygon[0][0] != polygon[polygon.length - 1][0] ||
+      polygon[0][1] != polygon[polygon.length - 1][1]
+    ) {
+      polygon.push(polygon[0]);
+    }
     return { polygon, minLat, minLng, delta };
   }
 
