@@ -121,8 +121,45 @@ the file and import as you prefer. No extra dependencies are required.
 
 ## Usage
 
-Please check the functions signatures and description in the
-[source](https://github.com/luxedo/OCDots/blob/master/docs/ocdots.js).
+`ocdots` provides several functions to iterate a set of `points` in a
+`polygon`. All functions must be called with
+[named parameters](https://exploringjs.com/impatient-js/ch_callables.html#named-parameters)
+
+### Arguments description
+
+- `points` {Array} The points to move. An array of 2D coordinates. Eg: [[0, 0], [0, 1], ...].
+- `polygon` {Array} The polygon vertexes. An array of 2D coordinates. Eg: [[0, 0], [0, 1], ...].
+  This polygon should be ordered (clockwise or anticlockwise) and closed i.e. first points
+  equals the last point.
+- `momentum` {Array} Accumulated momentum for each point. An array of 2D coordinates. Eg: [[0, 0], [0, 1], ...].
+- `baseForce` {Number} The force between points and also the walls.
+- `drag` {Number} The drag coeficient
+
+### ocdots.movePoints
+
+Moves points according to the applied forces into it. The forces
+are: 1) between points, 2) between the point and walls of the
+polygon, 3) between points and vertexes of the polygon.
+
+The points moves according to it's momentum up to maxMomentum.
+Drag reduces the momentum with the square of the momentum.
+Viscosity lowers the momentum of points with high forces.
+
+Runs one iteration
+
+#### Parameters
+
+- points
+- momentum
+- polygon
+- baseForce
+- drag
+  @param {Number} viscosity The viscosity coeficient
+  @param {Number} maxMomentum Maximum momentum for each point
+  @param {Boolean} parallelForces Sum line segmen parallel forces
+  as well.
+  @return {Array, Array} points,momentum Updated points and momentum
+  arrays
 
 A running example can be found [here](https://luxedo.github.io/OCDots/).
 
