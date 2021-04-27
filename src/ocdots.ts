@@ -1,6 +1,10 @@
 /*
  * OCDots
- * Copyright (C) 2020 Luiz Eduardo Amaral <luizamaral306@gmail.com>
+ *
+ * OCDots is a javascript library for creating evenly distributed
+ * points inside a polygon
+ *
+ * Copyright (C) 2021 Luiz Eduardo Amaral <luizamaral306@gmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,13 +19,12 @@
  */
 
 // Default values
-const SIMPLIFYPOLYGON = 20;
-const BASEFORCE = 4;
-const DRAG = 0.1;
-const VISCOSITY = 0.1;
-const MAXMOMENTUM = 5;
-const PARALLELFORCES = true;
-const ATTENUATION = 0.01;
+export const BASEFORCE = 5;
+export const DRAG = 0.1;
+export const VISCOSITY = 0.1;
+export const MAXMOMENTUM = 5;
+export const PARALLELFORCES = true;
+export const ATTENUATION = 0.01;
 
 // Types
 type coord = [number, number];
@@ -54,7 +57,7 @@ type geoCoord = { lat: number; lng: number };
  * @return {Array, Array} points,momentum Updated points and momentum
  *      arrays
  */
-function movePoints({
+export function movePoints({
   points,
   momentum,
   polygon,
@@ -125,7 +128,7 @@ function movePoints({
  * @param {Array} points The points acting on pt
  * @return {Array} force Sum of forces acting on pt
  */
-function pointForces(pt: coord, points: coord[]): coord {
+export function pointForces(pt: coord, points: coord[]): coord {
   return points.reduce(
     (acc, pt0) => {
       const vdx = pt[0] - pt0[0];
@@ -157,7 +160,7 @@ function pointForces(pt: coord, points: coord[]): coord {
  *    as well.
  * @return {Array} force Sum of forces acting on pt
  */
-function polygonForces(
+export function polygonForces(
   pt: coord,
   polygon: coord[],
   parallelForces: boolean = PARALLELFORCES
@@ -206,7 +209,7 @@ function polygonForces(
  * @param {Array} v2 Line segment vertetx 2
  * @return {Array} p Perpendicular vector
  */
-function perpendicularToLine(pt: coord, v1: coord, v2: coord): coord {
+export function perpendicularToLine(pt: coord, v1: coord, v2: coord): coord {
   const v1v2 = [v1[0] - v2[0], v1[1] - v2[1]];
   const nv1v2 = Math.sqrt(Math.pow(v1v2[0], 2) + Math.pow(v1v2[1], 2));
   const v1p = [v1[0] - pt[0], v1[1] - pt[1]];
@@ -225,7 +228,7 @@ function perpendicularToLine(pt: coord, v1: coord, v2: coord): coord {
  * @param {Number} maxMomentum Maximum momentum for each point
  * @return {Array} mu Updated momentum
  */
-function updateMomentum(
+export function updateMomentum(
   mt: coord,
   force: coord,
   drag: number,
@@ -256,7 +259,7 @@ function updateMomentum(
  *      closed i.e. first points equals the last point.
  * @return {boolean} inbound True if pt is inside the polygon
  */
-function checkInbounds(pt: coord, polygon: coord[]): boolean {
+export function checkInbounds(pt: coord, polygon: coord[]): boolean {
   let inbound = false;
   const [x, y] = pt;
   for (let i = 1; i < polygon.length; i++) {
@@ -277,7 +280,7 @@ function checkInbounds(pt: coord, polygon: coord[]): boolean {
  *      closed i.e. first points equals the last point.
  * @return {Array} points N points inside the polygon
  */
-function randomInPolygon(N: number, polygon: coord[]): coord[] {
+export function randomInPolygon(N: number, polygon: coord[]): coord[] {
   let points = [];
   const { xMin, xMax, yMin, yMax } = polygon.reduce(
     (acc, v) => {
@@ -313,7 +316,10 @@ function randomInPolygon(N: number, polygon: coord[]): coord[] {
  * @param {Array} geoPolygon Polygon of geo coordinates {lat, lng}
  * @return {Array} points N points inside the geo polygon
  */
-function randomInGeoPolygon(N: number, geoPolygon: geoCoord[]): geoCoord[] {
+export function randomInGeoPolygon(
+  N: number,
+  geoPolygon: geoCoord[]
+): geoCoord[] {
   return randomInPolygon(
     N,
     geoPolygon.map((p) => [p.lat, p.lng])
@@ -344,7 +350,7 @@ function randomInGeoPolygon(N: number, geoPolygon: geoCoord[]): geoCoord[] {
  *      baseForce, currentDrag, viscosity, maxMomentum
  * @return {Array} points Last iteration points positions
  */
-function relaxPoints({
+export function relaxPoints({
   points,
   momentum,
   polygon,
@@ -421,7 +427,7 @@ function relaxPoints({
  * @return {Array} points Last iteration points positions
  */
 
-function relaxNPoints({
+export function relaxNPoints({
   N,
   polygon,
   iterations,
@@ -470,7 +476,6 @@ function relaxNPoints({
  * @param {Number} width Width of the polygon
  * @param {Number} iterations Number of iterations to run
  * @param {Function} callback Callback function to run at every
- * @param {Number} simplifyPolygon minimum vertex distances
  * @param {Number} baseForce The force constant
  * @param {Number} drag The drag coeficient
  * @param {Number} viscosity The viscosity coeficient
@@ -483,13 +488,12 @@ function relaxNPoints({
  * @return {Object} { polygon, points, geoPoints } Last iteration geo
  *      points positions
  */
-function relaxGeoPoints({
+export function relaxGeoPoints({
   geoPoints,
   geoPolygon,
   width,
   iterations,
   callback,
-  simplifyPolygon = SIMPLIFYPOLYGON,
   baseForce = BASEFORCE,
   drag = DRAG,
   viscosity = VISCOSITY,
@@ -502,7 +506,6 @@ function relaxGeoPoints({
   width: number;
   iterations: number;
   callback?: Function;
-  simplifyPolygon?: number;
   baseForce?: number;
   drag?: number;
   viscosity?: number;
@@ -510,11 +513,7 @@ function relaxGeoPoints({
   parallelForces?: boolean;
   attenuation?: number;
 }) {
-  const { polygon, minLat, minLng, delta } = buildPolygon(
-    geoPolygon,
-    width,
-    simplifyPolygon
-  );
+  const { polygon, minLat, minLng, delta } = buildPolygon(geoPolygon, width);
 
   const momentum: coord[] = geoPoints.map(() => [0, 0]);
   const points = relaxPoints({
@@ -551,7 +550,6 @@ function relaxGeoPoints({
  * @param {Number} width Width of the polygon
  * @param {Number} iterations Number of iterations to run
  * @param {Function} callback Callback function to run at every
- * @param {Number} simplifyPolygon minimum vertex distances
  * @param {Number} baseForce The force constant
  * @param {Number} drag The drag coeficient
  * @param {Number} viscosity The viscosity coeficient
@@ -564,13 +562,12 @@ function relaxGeoPoints({
  * @return {Object} { polygon, points, geoPoints } Last iteration geo
  *      points positions
  */
-function relaxNGeoPoints({
+export function relaxNGeoPoints({
   N,
   geoPolygon,
   width,
   iterations,
   callback,
-  simplifyPolygon = SIMPLIFYPOLYGON,
   baseForce = BASEFORCE,
   drag = DRAG,
   viscosity = VISCOSITY,
@@ -583,7 +580,6 @@ function relaxNGeoPoints({
   width: number;
   iterations: number;
   callback?: Function;
-  simplifyPolygon?: number;
   baseForce?: number;
   drag?: number;
   viscosity?: number;
@@ -598,7 +594,6 @@ function relaxNGeoPoints({
     width,
     iterations,
     callback,
-    simplifyPolygon,
     baseForce,
     drag,
     viscosity,
@@ -613,14 +608,11 @@ function relaxNGeoPoints({
  *
  * @param {Array} geoPolygon Polygon of geo coordinates {lat, lng}
  * @param {Number} width Width of the polygon
- * @param {Number} simplifyPolygon Minimum distance between vertices.
- *      If vertices are closer than this, the one of them is discarded.
  * @return {Object} { polygon, minLat, minLng, delta }
  */
-function buildPolygon(
+export function buildPolygon(
   geoPolygon: geoCoord[],
-  width: number,
-  simplifyPolygon: number
+  width: number
 ): {
   polygon: coord[];
   minLat: number;
@@ -643,21 +635,9 @@ function buildPolygon(
     }
   );
   const delta = width / (maxLng - minLng);
-  let polygon: coord[] = geoPolygon
-    .map((v): coord => [delta * (v.lat - minLat), delta * (v.lng - minLng)])
-    .filter((v1, i1, arr): boolean => {
-      return arr.reduce(
-        (acc, v2, i2) =>
-          i1 == i2
-            ? acc
-            : !acc
-            ? acc
-            : Math.sqrt(
-                Math.pow(v1[0] - v2[0], 2) + Math.pow(v1[1] - v2[1], 2)
-              ) > simplifyPolygon,
-        true
-      );
-    });
+  let polygon: coord[] = geoPolygon.map(
+    (v): coord => [delta * (v.lat - minLat), delta * (v.lng - minLng)]
+  );
   // polygon = sortPolygon(polygon);
   if (
     polygon[0][0] != polygon[polygon.length - 1][0] ||
@@ -674,7 +654,7 @@ function buildPolygon(
  * @param {Array} polygon Set of points that describes the polygon
  * @return {Array} polygon Sorted polygon
  */
-function sortPolygon(polygon) {
+export function sortPolygon(polygon) {
   const centroid = polygon.reduce(
     (acc, v, i, arr) => [
       acc[0] + v[0] / arr.length,
@@ -698,7 +678,7 @@ function sortPolygon(polygon) {
  * @param {Array} polygon Set of points that describes the polygon
  * @param {String} color Points color
  */
-function drawPolygon(ctx, polygon, color = "black") {
+export function drawPolygon(ctx, polygon, color = "black") {
   ctx.strokestyle = color;
   const pt0 = polygon[0];
   ctx.beginPath();
@@ -718,7 +698,7 @@ function drawPolygon(ctx, polygon, color = "black") {
  * @param {Number} radius points radius
  * @param {String} color Points color
  */
-function drawPoints(ctx, points, radius = 6, color = "black") {
+export function drawPoints(ctx, points, radius = 6, color = "black") {
   ctx.fillStyle = color;
   points.forEach((pt) => {
     ctx.beginPath();
@@ -733,7 +713,7 @@ function drawPoints(ctx, points, radius = 6, color = "black") {
  * @param {Object} canvas Canvas object
  * @param {String} backgroundColor Points color
  */
-function resetCanvas(canvas, backgroundColor = "white") {
+export function resetCanvas(canvas, backgroundColor = "white") {
   const ctx = canvas.getContext("2d");
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.fillStyle = backgroundColor;
@@ -749,7 +729,7 @@ function resetCanvas(canvas, backgroundColor = "white") {
  * @param {String} color Points color
  * @param {String} backgroundColor Points color
  */
-function drawPolygonAndPoints(
+export function drawPolygonAndPoints(
   canvas,
   points,
   polygon,

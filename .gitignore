@@ -1,3 +1,5 @@
+dist/
+dist.browser/
 coverage/
 node_modules/
 .ipynb_checkpoints/
