@@ -38,7 +38,7 @@ const points = [
   [90, 91],
 ];
 let momentum = points.map(() => [0, 0]);
-const newPoints = movePoints({
+const newPoints = ocdots.movePoints({
   points,
   momentum,
   polygon,
@@ -75,7 +75,7 @@ const points = [
   [70, 70],
 ];
 const iterations = 600;
-const newPoints = relaxPoints({
+const newPoints = ocdots.relaxPoints({
   points,
   polygon,
   iterations,
@@ -107,11 +107,11 @@ const ocdots = require("ocdots");
 ocdots.movePoints(...);
 ```
 
-In the browser import the script and then
+In the browser import the script as a [module](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Modules) and then
 
 ```html
-<script src="node_modules/ocdots/docs/ocdots.js"></script>
-<script>
+<script src="node_modules/ocdots/docs/ocdots.js" type="module"></script>
+<script type="module">
   ocdots.movePoints(...);
 </script>
 ```
@@ -125,17 +125,9 @@ the file and import as you prefer. No extra dependencies are required.
 `polygon`. All functions must be called with
 [named parameters](https://exploringjs.com/impatient-js/ch_callables.html#named-parameters)
 
-### Arguments description
+<a name="movePoints"></a>
 
-- `points` {Array} The points to move. An array of 2D coordinates. Eg: [[0, 0], [0, 1], ...].
-- `polygon` {Array} The polygon vertexes. An array of 2D coordinates. Eg: [[0, 0], [0, 1], ...].
-  This polygon should be ordered (clockwise or anticlockwise) and closed i.e. first points
-  equals the last point.
-- `momentum` {Array} Accumulated momentum for each point. An array of 2D coordinates. Eg: [[0, 0], [0, 1], ...].
-- `baseForce` {Number} The force between points and also the walls.
-- `drag` {Number} The drag coeficient
-
-### ocdots.movePoints
+## movePoints(config) ⇒ <code>Array.&lt;Array&gt;</code>
 
 Moves points according to the applied forces into it. The forces
 are: 1) between points, 2) between the point and walls of the
@@ -147,21 +139,220 @@ Viscosity lowers the momentum of points with high forces.
 
 Runs one iteration
 
-#### Parameters
+**Kind**: global function  
+**Returns**: <code>Array.&lt;Array&gt;</code> - points, momentum - Updated points and momentum
+arrays
 
-- points
-- momentum
-- polygon
-- baseForce
-- drag
-  @param {Number} viscosity The viscosity coeficient
-  @param {Number} maxMomentum Maximum momentum for each point
-  @param {Boolean} parallelForces Sum line segmen parallel forces
-  as well.
-  @return {Array, Array} points,momentum Updated points and momentum
-  arrays
+| Param                   | Type                 | Description                                                                                                                                                                        |
+| ----------------------- | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| config                  | <code>Object</code>  | configuration object                                                                                                                                                               |
+| congig.points           | <code>Array</code>   | The points to move                                                                                                                                                                 |
+| config.momentum         | <code>Array</code>   | Accumulated momentum for each point. [0, 0] when the points are stopped.                                                                                                           |
+| config.polygon          | <code>Array</code>   | Set of points that describes the polygon that contains the points. This polygon should be ordered (clockwise or anticlockwise) and closed i.e. first points equals the last point. |
+| [config.baseForce]      | <code>Number</code>  | The force constant                                                                                                                                                                 |
+| [config.drag]           | <code>Number</code>  | The drag coeficient                                                                                                                                                                |
+| [config.viscosity]      | <code>Number</code>  | The viscosity coeficient                                                                                                                                                           |
+| [config.maxMomentum]    | <code>Number</code>  | Maximum momentum for each point                                                                                                                                                    |
+| [config.parallelForces] | <code>Boolean</code> | Sum line segmen parallel forces as well.                                                                                                                                           |
 
-A running example can be found [here](https://luxedo.github.io/OCDots/).
+<a name="randomInPolygon"></a>
+
+## randomInPolygon(N, polygon) ⇒ <code>Array</code>
+
+Creates N points inside the polygon
+
+**Kind**: global function  
+**Returns**: <code>Array</code> - points N points inside the polygon
+
+| Param   | Type                | Description                                                                                                                                               |
+| ------- | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| N       | <code>Number</code> | Number of points                                                                                                                                          |
+| polygon | <code>Array</code>  | Set of points that describes the polygon. This polygon should be ordered (clockwise or anticlockwise) and closed i.e. first points equals the last point. |
+
+<a name="randomInGeoPolygon"></a>
+
+## randomInGeoPolygon(N, geoPolygon) ⇒ <code>Array</code>
+
+Creates N points inside a geo polygon,
+
+**Kind**: global function  
+**Returns**: <code>Array</code> - points N points inside the geo polygon
+
+| Param      | Type                | Description                           |
+| ---------- | ------------------- | ------------------------------------- |
+| N          | <code>Number</code> | Number of points                      |
+| geoPolygon | <code>Array</code>  | Polygon of geo coordinates {lat, lng} |
+
+<a name="relaxPoints"></a>
+
+## relaxPoints(config) ⇒ <code>Array</code>
+
+Runs several iterations of movePoints(). The drag increases in every
+iteration attenuating the movement.
+
+**Kind**: global function  
+**Returns**: <code>Array</code> - points Last iteration points positions
+
+| Param                   | Type                  | Description                                                                                                                                                                        |
+| ----------------------- | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| config                  | <code>Object</code>   | configuration object                                                                                                                                                               |
+| config.points           | <code>Array</code>    | The points to move                                                                                                                                                                 |
+| config.momentum         | <code>Array</code>    | Initial momentum. [0, 0] for all points if ommited                                                                                                                                 |
+| config.polygon          | <code>Array</code>    | Set of points that describes the polygon that contains the points. This polygon should be ordered (clockwise or anticlockwise) and closed i.e. first points equals the last point. |
+| config.iterations       | <code>Number</code>   | Number of iterations to run                                                                                                                                                        |
+| [config.callback]       | <code>function</code> | Callback function to run at every iteration (optional). Callback args: points, momentum, polygon, baseForce, currentDrag, viscosity, maxMomentum                                   |
+| [config.baseForce]      | <code>Number</code>   | The force constant                                                                                                                                                                 |
+| [config.drag]           | <code>Number</code>   | The drag coeficient                                                                                                                                                                |
+| [config.viscosity]      | <code>Number</code>   | The viscosity coeficient                                                                                                                                                           |
+| [config.maxMomentum]    | <code>Number</code>   | Maximum momentum for each point                                                                                                                                                    |
+| [config.parallelForces] | <code>Boolean</code>  | Sum line segmen parallel forces as well.                                                                                                                                           |
+| [config.attenuation]    | <code>Number</code>   | Rate of attenuation                                                                                                                                                                |
+
+<a name="relaxNPoints"></a>
+
+## relaxNPoints(config) ⇒ <code>Array</code>
+
+Calls relaxPoints for N random points placed inside the polygon.
+
+**Kind**: global function  
+**Returns**: <code>Array</code> - points Last iteration points positions
+
+| Param                   | Type                  | Description                                                                                                                                                                        |
+| ----------------------- | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| config                  | <code>Object</code>   | configuration object                                                                                                                                                               |
+| config.N                | <code>Number</code>   | Number of points                                                                                                                                                                   |
+| config.polygon          | <code>Array</code>    | Set of points that describes the polygon that contains the points. This polygon should be ordered (clockwise or anticlockwise) and closed i.e. first points equals the last point. |
+| config.iterations       | <code>Number</code>   | Number of iterations to run                                                                                                                                                        |
+| [config.callback]       | <code>function</code> | Callback function to run at every iteration (optional). Callback args: points, momentum, polygon, baseForce, currentDrag, viscosity, maxMomentum                                   |
+| [config.baseForce]      | <code>Number</code>   | The force constant                                                                                                                                                                 |
+| [config.drag]           | <code>Number</code>   | The drag coeficient                                                                                                                                                                |
+| [config.viscosity]      | <code>Number</code>   | The viscosity coeficient                                                                                                                                                           |
+| [config.maxMomentum]    | <code>Number</code>   | Maximum momentum for each point                                                                                                                                                    |
+| [config.parallelForces] | <code>Boolean</code>  | Sum line segmen parallel forces as well.                                                                                                                                           |
+| [config.attenuation]    | <code>Number</code>   | Rate of attenuation                                                                                                                                                                |
+
+<a name="relaxGeoPoints"></a>
+
+## relaxGeoPoints(config) ⇒ <code>Object</code>
+
+Converts geoPoints and geoPolygon to a points and polygon, then
+calls relaxPoints, returning the last position of the points.
+
+**Kind**: global function  
+**Returns**: <code>Object</code> - { polygon, points, geoPoints } Last iteration geo
+points positions
+
+| Param                   | Type                  | Description                                                                                                                           |
+| ----------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| config                  | <code>Object</code>   | configuration object                                                                                                                  |
+| config.geoPoints        | <code>Array</code>    | Points in geo coordinates {lat, lng}                                                                                                  |
+| config.geoPolygon       | <code>Array</code>    | Polygon of geo coordinates {lat, lng}                                                                                                 |
+| config.width            | <code>Number</code>   | Width of the polygon                                                                                                                  |
+| config.iterations       | <code>Number</code>   | Number of iterations to run                                                                                                           |
+| [confi.callback]        | <code>function</code> | Callback function to run at every iteration. Callback args: points, momentum, polygon, baseForce, currentDrag, viscosity, maxMomentum |
+| [config.baseForce]      | <code>Number</code>   | The force constant                                                                                                                    |
+| [config.drag]           | <code>Number</code>   | The drag coeficient                                                                                                                   |
+| [config.viscosity]      | <code>Number</code>   | The viscosity coeficient                                                                                                              |
+| [config.maxMomentum]    | <code>Number</code>   | Maximum momentum for each point                                                                                                       |
+| [config.parallelForces] | <code>Boolean</code>  | Sum line segmen parallel forces as well.                                                                                              |
+| [config.attenuation]    | <code>Number</code>   | Rate of attenuation                                                                                                                   |
+
+<a name="relaxNGeoPoints"></a>
+
+## relaxNGeoPoints(config) ⇒ <code>Object</code>
+
+Calls relaxGeoPoints for N random points placed inside the polygon.
+
+**Kind**: global function  
+**Returns**: <code>Object</code> - { polygon, points, geoPoints } Last iteration geo
+points positions
+
+| Param                   | Type                  | Description                                                                                                                           |
+| ----------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| config                  | <code>Object</code>   | configuration object                                                                                                                  |
+| config.N                | <code>Number</code>   | Number of points                                                                                                                      |
+| config.geoPolygon       | <code>Array</code>    | Polygon of geo coordinates {lat, lng}                                                                                                 |
+| config.width            | <code>Number</code>   | Width of the polygon                                                                                                                  |
+| config.iterations       | <code>Number</code>   | jNumber of iterations to run                                                                                                          |
+| [config.callback]       | <code>function</code> | Callback function to run at every iteration. Callback args: points, momentum, polygon, baseForce, currentDrag, viscosity, maxMomentum |
+| [config.baseForce]      | <code>Number</code>   | The force constant                                                                                                                    |
+| [config.drag]           | <code>Number</code>   | The drag coeficient                                                                                                                   |
+| [config.viscosity]      | <code>Number</code>   | The viscosity coeficient                                                                                                              |
+| [config.maxMomentum]    | <code>Number</code>   | Maximum momentum for each point                                                                                                       |
+| [config.parallelForces] | <code>Boolean</code>  | Sum line segmen parallel forces as well.                                                                                              |
+| [config.attenuation]    | <code>Number</code>   | Rate of attenuation                                                                                                                   |
+
+<a name="buildPolygon"></a>
+
+## buildPolygon(geoPolygon, width) ⇒ <code>Object</code>
+
+Transforms a set of coordinates into a polygon with a known width
+
+**Kind**: global function  
+**Returns**: <code>Object</code> - { polygon, minLat, minLng, delta }
+
+| Param      | Type                | Description                           |
+| ---------- | ------------------- | ------------------------------------- |
+| geoPolygon | <code>Array</code>  | Polygon of geo coordinates {lat, lng} |
+| width      | <code>Number</code> | Width of the polygon                  |
+
+<a name="drawPolygon"></a>
+
+## drawPolygon(ctx, polygon, color)
+
+Plots a polygon in the canvas
+
+**Kind**: global function
+
+| Param   | Type                | Description                              |
+| ------- | ------------------- | ---------------------------------------- |
+| ctx     | <code>Object</code> | Canvas context                           |
+| polygon | <code>Array</code>  | Set of points that describes the polygon |
+| color   | <code>String</code> | Points color                             |
+
+<a name="drawPoints"></a>
+
+## drawPoints(ctx, polygon, radius, color)
+
+Plots points in the canvas
+
+**Kind**: global function
+
+| Param   | Type                | Description                              |
+| ------- | ------------------- | ---------------------------------------- |
+| ctx     | <code>Object</code> | Canvas context                           |
+| polygon | <code>Array</code>  | Set of points that describes the polygon |
+| radius  | <code>Number</code> | points radius                            |
+| color   | <code>String</code> | Points color                             |
+
+<a name="resetCanvas"></a>
+
+## resetCanvas(canvas, backgroundColor)
+
+Clears the canvas and sets a background color
+
+**Kind**: global function
+
+| Param           | Type                | Description   |
+| --------------- | ------------------- | ------------- |
+| canvas          | <code>Object</code> | Canvas object |
+| backgroundColor | <code>String</code> | Points color  |
+
+<a name="drawPolygonAndPoints"></a>
+
+## drawPolygonAndPoints(canvas, polygon, radius, color, backgroundColor)
+
+Plots the points and polygon into a blank canvas
+
+**Kind**: global function
+
+| Param           | Type                | Description                              |
+| --------------- | ------------------- | ---------------------------------------- |
+| canvas          | <code>Object</code> | Canvas object                            |
+| polygon         | <code>Array</code>  | Set of points that describes the polygon |
+| radius          | <code>Number</code> | points radius                            |
+| color           | <code>String</code> | Points color                             |
+| backgroundColor | <code>String</code> | Points color                             |
 
 ## License
 

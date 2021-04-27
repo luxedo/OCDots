@@ -10,8 +10,9 @@
   ],
   "scripts": {
     "dev": "npm install && npm link . && npm link ocdots",
-    "build": "npm run-script pretty && npm run-script build-projects && cp dist.browser/ocdots.js docs/ocdots.js",
+    "build": "npm run-script pretty && npm run-script build-projects && npm run-script build-demo",
     "build-projects": "tsc && tsc --project tsconfig-browser.json",
+    "build-demo": "cp dist.browser/ocdots.js docs/ocdots.js",
     "test": "jest --coverage",
     "pretty": "prettier --write \"README.md\" \"test/**/*.js\" \"src/**/*.ts\" \"docs/**/*.html\""
   },
