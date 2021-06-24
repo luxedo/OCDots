@@ -59,6 +59,9 @@ export var ATTENUATION = 0.01;
  */
 export function movePoints(_a) {
     var points = _a.points, momentum = _a.momentum, polygon = _a.polygon, _b = _a.baseForce, baseForce = _b === void 0 ? BASEFORCE : _b, _c = _a.drag, drag = _c === void 0 ? DRAG : _c, _d = _a.viscosity, viscosity = _d === void 0 ? VISCOSITY : _d, _e = _a.maxMomentum, maxMomentum = _e === void 0 ? MAXMOMENTUM : _e, _f = _a.parallelForces, parallelForces = _f === void 0 ? PARALLELFORCES : _f;
+    if (polygon.length < 3) {
+        throw new RangeError("Polygon must have at least 3 vertices");
+    }
     var p = __spreadArray([], points);
     var m = __spreadArray([], momentum);
     var N = points.length;
@@ -269,7 +272,7 @@ export function randomInPolygon(N, polygon) {
  * @return {Array} points N points inside the geo polygon
  */
 export function randomInGeoPolygon(N, geoPolygon) {
-    return randomInPolygon(N, geoPolygon.map(function (p) { return [p.lat, p.lng]; })).map(function (p) { return ({ lat: p[0], lng: p[1] }); });
+    return (randomInPolygon(N, geoPolygon.map(function (p) { return [p.lat, p.lng]; })).map(function (p) { return ({ lat: p[0], lng: p[1] }); }));
 }
 /**
  * Runs several iterations of movePoints(). The drag increases in every
@@ -301,7 +304,7 @@ export function relaxPoints(_a) {
     var _b;
     var points = _a.points, momentum = _a.momentum, polygon = _a.polygon, iterations = _a.iterations, callback = _a.callback, _c = _a.baseForce, baseForce = _c === void 0 ? BASEFORCE : _c, _d = _a.drag, drag = _d === void 0 ? DRAG : _d, _e = _a.viscosity, viscosity = _e === void 0 ? VISCOSITY : _e, _f = _a.maxMomentum, maxMomentum = _f === void 0 ? MAXMOMENTUM : _f, _g = _a.parallelForces, parallelForces = _g === void 0 ? PARALLELFORCES : _g, _h = _a.attenuation, attenuation = _h === void 0 ? ATTENUATION : _h;
     var p = __spreadArray([], points);
-    var m = momentum == undefined ? p.map(function () { return [0, 0]; }) : __spreadArray([], momentum);
+    var m = ((momentum == undefined ? p.map(function () { return [0, 0]; }) : __spreadArray([], momentum)));
     var att = 1 + attenuation;
     for (var i = 0, attIter = att; i < iterations; i++, attIter *= att) {
         _b = movePoints({
@@ -389,10 +392,7 @@ export function relaxGeoPoints(_a) {
     var _h = buildPolygon(geoPolygon, width), polygon = _h.polygon, minLat = _h.minLat, minLng = _h.minLng, delta = _h.delta;
     var momentum = geoPoints.map(function () { return [0, 0]; });
     var points = relaxPoints({
-        points: geoPoints.map(function (p) { return [
-            (p.lat - minLat) * delta,
-            (p.lng - minLng) * delta,
-        ]; }),
+        points: (geoPoints.map(function (p) { return [(p.lat - minLat) * delta, (p.lng - minLng) * delta]; })),
         momentum: momentum,
         polygon: polygon,
         iterations: iterations,
@@ -473,7 +473,7 @@ export function buildPolygon(geoPolygon, width) {
         maxLng: -Infinity,
     }), minLat = _a.minLat, maxLat = _a.maxLat, minLng = _a.minLng, maxLng = _a.maxLng;
     var delta = width / (maxLng - minLng);
-    var polygon = geoPolygon.map(function (v) { return [delta * (v.lat - minLat), delta * (v.lng - minLng)]; });
+    var polygon = (geoPolygon.map(function (v) { return [delta * (v.lat - minLat), delta * (v.lng - minLng)]; }));
     // polygon = sortPolygon(polygon);
     if (polygon[0][0] != polygon[polygon.length - 1][0] ||
         polygon[0][1] != polygon[polygon.length - 1][1]) {

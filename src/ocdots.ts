@@ -27,8 +27,16 @@ export const PARALLELFORCES = true;
 export const ATTENUATION = 0.01;
 
 // Types
-type coord = [number, number];
-type geoCoord = { lat: number; lng: number };
+type vec = [number, number];
+type geoVec = { lat: number; lng: number };
+type VecArray<T> = {
+  0: T;
+} & Array<T>; // Vector arrays must have at least one vector
+type PolygonArray<T> = {
+  0: T;
+  1: T;
+  2: T;
+} & Array<T>; // Polygons must have at least 3 vectors
 
 /**
  * Moves points according to the applied forces into it. The forces
@@ -68,17 +76,20 @@ export function movePoints({
   maxMomentum = MAXMOMENTUM,
   parallelForces = PARALLELFORCES,
 }: {
-  points: coord[];
-  momentum: coord[];
-  polygon: coord[];
+  points: VecArray<vec>;
+  momentum: VecArray<vec>;
+  polygon: PolygonArray<vec>;
   baseForce?: number;
   drag?: number;
   viscosity?: number;
   maxMomentum?: number;
   parallelForces?: boolean;
-}) {
-  let p = [...points];
-  let m = [...momentum];
+}): [VecArray<vec>, VecArray<vec>] {
+  if (polygon.length < 3) {
+    throw new RangeError("Polygon must have at least 3 vertices");
+  }
+  let p = <VecArray<vec>>[...points];
+  let m = <VecArray<vec>>[...momentum];
   const N = points.length;
 
   if (
@@ -97,8 +108,8 @@ export function movePoints({
   const bf = p.map((pt) => polygonForces(pt, polygon, parallelForces));
 
   // Update momentum
-  m = m.map((mt, i) => {
-    const force: coord = [
+  m = <VecArray<vec>>m.map((mt, i) => {
+    const force: vec = [
       Math.pow(10, baseForce) * (pf[i][0] + (2 * N * bf[i][0]) / S),
       Math.pow(10, baseForce) * (pf[i][1] + (2 * N * bf[i][1]) / S),
       // Polygon forces are normalized to it's total length and
@@ -109,7 +120,7 @@ export function movePoints({
   });
 
   // Update position
-  p = p.map((pt, i) => {
+  p = <VecArray<vec>>p.map((pt, i) => {
     const px = pt[0] + m[i][0];
     const py = pt[1] + m[i][1];
     if (!checkInbounds([px, py], polygon)) {
@@ -119,7 +130,7 @@ export function movePoints({
     }
     return [px, py];
   });
-  return [p, m];
+  return [<VecArray<vec>>p, <VecArray<vec>>m];
 }
 
 /**
@@ -130,7 +141,7 @@ export function movePoints({
  * @param {Array} points The points acting on pt
  * @return {Array} force Sum of forces acting on pt
  */
-export function pointForces(pt: coord, points: coord[]): coord {
+export function pointForces(pt: vec, points: VecArray<vec>): vec {
   return points.reduce(
     (acc, pt0) => {
       const vdx = pt[0] - pt0[0];
@@ -164,10 +175,10 @@ export function pointForces(pt: coord, points: coord[]): coord {
  * @return {Array} force Sum of forces acting on pt
  */
 export function polygonForces(
-  pt: coord,
-  polygon: coord[],
+  pt: vec,
+  polygon: PolygonArray<vec>,
   parallelForces: boolean = PARALLELFORCES
-): coord {
+): vec {
   return polygon.slice(1).reduce(
     (acc, v2, i1) => {
       const v1 = polygon[i1];
@@ -213,7 +224,7 @@ export function polygonForces(
  * @param {Array} v2 Line segment vertetx 2
  * @return {Array} p Perpendicular vector
  */
-export function perpendicularToLine(pt: coord, v1: coord, v2: coord): coord {
+export function perpendicularToLine(pt: vec, v1: vec, v2: vec): vec {
   const v1v2 = [v1[0] - v2[0], v1[1] - v2[1]];
   const nv1v2 = Math.sqrt(Math.pow(v1v2[0], 2) + Math.pow(v1v2[1], 2));
   const v1p = [v1[0] - pt[0], v1[1] - pt[1]];
@@ -234,12 +245,12 @@ export function perpendicularToLine(pt: coord, v1: coord, v2: coord): coord {
  * @return {Array} mu Updated momentum
  */
 export function updateMomentum(
-  mt: coord,
-  force: coord,
+  mt: vec,
+  force: vec,
   drag: number,
   viscosity: number,
   maxMomentum: number
-): coord {
+): vec {
   const mx = force[0] + mt[0];
   const my = force[1] + mt[1];
   const norm2 = Math.pow(mx, 2) + Math.pow(my, 2);
@@ -265,7 +276,7 @@ export function updateMomentum(
  *      closed i.e. first points equals the last point.
  * @return {boolean} inbound True if pt is inside the polygon
  */
-export function checkInbounds(pt: coord, polygon: coord[]): boolean {
+export function checkInbounds(pt: vec, polygon: PolygonArray<vec>): boolean {
   let inbound = false;
   const [x, y] = pt;
   for (let i = 1; i < polygon.length; i++) {
@@ -286,7 +297,10 @@ export function checkInbounds(pt: coord, polygon: coord[]): boolean {
  *      closed i.e. first points equals the last point.
  * @return {Array} points N points inside the polygon
  */
-export function randomInPolygon(N: number, polygon: coord[]): coord[] {
+export function randomInPolygon(
+  N: number,
+  polygon: PolygonArray<vec>
+): VecArray<vec> {
   let points = [];
   const { xMin, xMax, yMin, yMax } = polygon.reduce(
     (acc, v) => {
@@ -306,13 +320,13 @@ export function randomInPolygon(N: number, polygon: coord[]): coord[] {
   const deltaX = xMax - xMin;
   const deltaY = yMax - yMin;
   while (points.length < N) {
-    const pt: coord = [
+    const pt: vec = [
       xMin + Math.random() * deltaX,
       yMin + Math.random() * deltaY,
     ];
     if (checkInbounds(pt, polygon)) points.push(pt);
   }
-  return points;
+  return <VecArray<vec>>points;
 }
 
 /**
@@ -324,12 +338,14 @@ export function randomInPolygon(N: number, polygon: coord[]): coord[] {
  */
 export function randomInGeoPolygon(
   N: number,
-  geoPolygon: geoCoord[]
-): geoCoord[] {
-  return randomInPolygon(
-    N,
-    geoPolygon.map((p) => [p.lat, p.lng])
-  ).map((p) => ({ lat: p[0], lng: p[1] }));
+  geoPolygon: VecArray<geoVec>
+): VecArray<geoVec> {
+  return <VecArray<geoVec>>(
+    randomInPolygon(
+      N,
+      <PolygonArray<vec>>geoPolygon.map((p) => <vec>[p.lat, p.lng])
+    ).map((p) => <geoVec>{ lat: p[0], lng: p[1] })
+  );
 }
 
 /**
@@ -371,9 +387,9 @@ export function relaxPoints({
   parallelForces = PARALLELFORCES,
   attenuation = ATTENUATION,
 }: {
-  points: coord[];
-  momentum: coord[];
-  polygon: coord[];
+  points: VecArray<vec>;
+  momentum: VecArray<vec>;
+  polygon: PolygonArray<vec>;
   iterations: number;
   callback?: Function;
   baseForce?: number;
@@ -383,8 +399,10 @@ export function relaxPoints({
   parallelForces?: boolean;
   attenuation?: number;
 }) {
-  let p = [...points];
-  let m: coord[] = momentum == undefined ? p.map(() => [0, 0]) : [...momentum];
+  let p: VecArray<vec> = <VecArray<vec>>[...points];
+  let m: VecArray<vec> = <VecArray<vec>>(
+    (momentum == undefined ? p.map(() => [0, 0]) : [...momentum])
+  );
 
   let att = 1 + attenuation;
   for (let i = 0, attIter = att; i < iterations; i++, attIter *= att) {
@@ -450,7 +468,7 @@ export function relaxNPoints({
   attenuation = ATTENUATION,
 }: {
   N: number;
-  polygon: coord[];
+  polygon: PolygonArray<vec>;
   iterations: number;
   callback?: Function;
   baseForce?: number;
@@ -461,7 +479,7 @@ export function relaxNPoints({
   attenuation?: number;
 }) {
   const points = randomInPolygon(N, polygon);
-  const momentum: coord[] = points.map(() => [0, 0]);
+  const momentum: VecArray<vec> = <VecArray<vec>>points.map(() => [0, 0]);
   return relaxPoints({
     points,
     momentum,
@@ -513,8 +531,8 @@ export function relaxGeoPoints({
   parallelForces = PARALLELFORCES,
   attenuation = ATTENUATION,
 }: {
-  geoPoints: geoCoord[];
-  geoPolygon: geoCoord[];
+  geoPoints: VecArray<geoVec>;
+  geoPolygon: PolygonArray<geoVec>;
   width: number;
   iterations: number;
   callback?: Function;
@@ -527,12 +545,13 @@ export function relaxGeoPoints({
 }) {
   const { polygon, minLat, minLng, delta } = buildPolygon(geoPolygon, width);
 
-  const momentum: coord[] = geoPoints.map(() => [0, 0]);
-  const points = relaxPoints({
-    points: geoPoints.map((p: any) => [
-      (p.lat - minLat) * delta,
-      (p.lng - minLng) * delta,
-    ]),
+  const momentum: VecArray<vec> = <VecArray<vec>>geoPoints.map(() => [0, 0]);
+  const points = <VecArray<vec>>relaxPoints({
+    points: <VecArray<vec>>(
+      geoPoints.map(
+        (p) => <vec>[(p.lat - minLat) * delta, (p.lng - minLng) * delta]
+      )
+    ),
     momentum,
     polygon,
     iterations,
@@ -590,7 +609,7 @@ export function relaxNGeoPoints({
   attenuation = ATTENUATION,
 }: {
   N: number;
-  geoPolygon: geoCoord[];
+  geoPolygon: PolygonArray<geoVec>;
   width: number;
   iterations: number;
   callback?: Function;
@@ -625,10 +644,10 @@ export function relaxNGeoPoints({
  * @return {Object} { polygon, minLat, minLng, delta }
  */
 export function buildPolygon(
-  geoPolygon: geoCoord[],
+  geoPolygon: VecArray<geoVec>,
   width: number
 ): {
-  polygon: coord[];
+  polygon: PolygonArray<vec>;
   minLat: number;
   minLng: number;
   delta: number;
@@ -649,8 +668,10 @@ export function buildPolygon(
     }
   );
   const delta = width / (maxLng - minLng);
-  let polygon: coord[] = geoPolygon.map(
-    (v): coord => [delta * (v.lat - minLat), delta * (v.lng - minLng)]
+  let polygon: PolygonArray<vec> = <PolygonArray<vec>>(
+    geoPolygon.map(
+      (v) => <vec>[delta * (v.lat - minLat), delta * (v.lng - minLng)]
+    )
   );
   // polygon = sortPolygon(polygon);
   if (
