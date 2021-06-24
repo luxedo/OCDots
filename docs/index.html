@@ -127,9 +127,21 @@
               <label
                 for="maxMomentum"
                 id="maxMomentumValue"
-                ,
                 class="mx-1"
               ></label>
+            </div>
+            <div class="d-flex flex-column mx-1">
+              <label for="wallForces" class="ml-2">Wall Forces</label>
+              <input
+                type="range"
+                class="form-control-range ml-1"
+                id="wallForces"
+                min="0"
+                max="10"
+                step="1"
+                onchange="setValue('wallForces', this.value);"
+              />
+              <label for="wallForces" id="wallForcesValue" class="mx-1"></label>
             </div>
             <div class="d-flex flex-column mx-1 align-self-start">
               <div>

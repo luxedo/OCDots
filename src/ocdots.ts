@@ -24,6 +24,7 @@ export const DRAG = 0.1;
 export const VISCOSITY = 0.1;
 export const MAXMOMENTUM = 5;
 export const PARALLELFORCES = true;
+export const WALLFORCES = 2;
 export const ATTENUATION = 0.01;
 
 // Types
@@ -63,6 +64,7 @@ type PolygonArray<T> = {
  * @param {Number=} config.maxMomentum - Maximum momentum for each point
  * @param {Boolean=} config.parallelForces - Sum line segmen parallel forces
  *    as well.
+ * @param {Number=} config.wallForces - Walls forces constant
  * @return {Array[]} points, momentum - Updated points and momentum
  *      arrays
  */
@@ -75,6 +77,7 @@ export function movePoints({
   viscosity = VISCOSITY,
   maxMomentum = MAXMOMENTUM,
   parallelForces = PARALLELFORCES,
+  wallForces = WALLFORCES,
 }: {
   points: VecArray<vec>;
   momentum: VecArray<vec>;
@@ -84,6 +87,7 @@ export function movePoints({
   viscosity?: number;
   maxMomentum?: number;
   parallelForces?: boolean;
+  wallForces?: number;
 }): [VecArray<vec>, VecArray<vec>] {
   if (polygon.length < 3) {
     throw new RangeError("Polygon must have at least 3 vertices");
@@ -110,11 +114,10 @@ export function movePoints({
   // Update momentum
   m = <VecArray<vec>>m.map((mt, i) => {
     const force: vec = [
-      Math.pow(10, baseForce) * (pf[i][0] + (2 * N * bf[i][0]) / S),
-      Math.pow(10, baseForce) * (pf[i][1] + (2 * N * bf[i][1]) / S),
+      Math.pow(10, baseForce) * (pf[i][0] + (wallForces * N * bf[i][0]) / S),
+      Math.pow(10, baseForce) * (pf[i][1] + (wallForces * N * bf[i][1]) / S),
       // Polygon forces are normalized to it's total length and
-      // multiplied by 2N as if there's 2 charges in the walls
-      // for each point
+      // multiplied by wallForces
     ];
     return updateMomentum(mt, force, drag, viscosity, maxMomentum);
   });
@@ -370,6 +373,7 @@ export function randomInGeoPolygon(
  * @param {Number=} config.maxMomentum - Maximum momentum for each point
  * @param {Boolean=} config.parallelForces - Sum line segmen parallel forces
  *    as well.
+ * @param {Number=} config.wallForces - Walls forces constant
  * @param {Number=} config.attenuation - Rate of attenuation
  *
  * @return {Array} points Last iteration points positions
@@ -385,6 +389,7 @@ export function relaxPoints({
   viscosity = VISCOSITY,
   maxMomentum = MAXMOMENTUM,
   parallelForces = PARALLELFORCES,
+  wallForces = WALLFORCES,
   attenuation = ATTENUATION,
 }: {
   points: VecArray<vec>;
@@ -397,6 +402,7 @@ export function relaxPoints({
   viscosity?: number;
   maxMomentum?: number;
   parallelForces?: boolean;
+  wallForces?: number;
   attenuation?: number;
 }) {
   let p: VecArray<vec> = <VecArray<vec>>[...points];
@@ -415,6 +421,7 @@ export function relaxPoints({
       viscosity,
       maxMomentum,
       parallelForces,
+      wallForces,
     });
     if (callback != undefined) {
       callback(
@@ -450,6 +457,7 @@ export function relaxPoints({
  * @param {Number=} config.maxMomentum - Maximum momentum for each point
  * @param {Boolean=} config.parallelForces - Sum line segmen parallel forces
  *    as well.
+ * @param {Number=} config.wallForces - Walls forces constant
  * @param {Number=} config.attenuation - Rate of attenuation
  *
  * @return {Array} points Last iteration points positions
@@ -465,6 +473,7 @@ export function relaxNPoints({
   viscosity = VISCOSITY,
   maxMomentum = MAXMOMENTUM,
   parallelForces = PARALLELFORCES,
+  wallForces = WALLFORCES,
   attenuation = ATTENUATION,
 }: {
   N: number;
@@ -476,6 +485,7 @@ export function relaxNPoints({
   viscosity?: number;
   maxMomentum?: number;
   parallelForces?: boolean;
+  wallForces?: number;
   attenuation?: number;
 }) {
   const points = randomInPolygon(N, polygon);
@@ -491,6 +501,7 @@ export function relaxNPoints({
     viscosity,
     maxMomentum,
     parallelForces,
+    wallForces,
     attenuation,
   });
 }
@@ -513,6 +524,7 @@ export function relaxNPoints({
  * @param {Number=} config.maxMomentum - Maximum momentum for each point
  * @param {Boolean=} config.parallelForces - Sum line segmen parallel forces
  *    as well.
+ * @param {Number=} config.wallForces - Walls forces constant
  * @param {Number=} config.attenuation - Rate of attenuation
  *
  * @return {Object} { polygon, points, geoPoints } Last iteration geo
@@ -529,6 +541,7 @@ export function relaxGeoPoints({
   viscosity = VISCOSITY,
   maxMomentum = MAXMOMENTUM,
   parallelForces = PARALLELFORCES,
+  wallForces = WALLFORCES,
   attenuation = ATTENUATION,
 }: {
   geoPoints: VecArray<geoVec>;
@@ -541,6 +554,7 @@ export function relaxGeoPoints({
   viscosity?: number;
   maxMomentum?: number;
   parallelForces?: boolean;
+  wallForces?: number;
   attenuation?: number;
 }) {
   const { polygon, minLat, minLng, delta } = buildPolygon(geoPolygon, width);
@@ -561,6 +575,7 @@ export function relaxGeoPoints({
     viscosity,
     maxMomentum,
     parallelForces,
+    wallForces,
     attenuation,
   });
   return {
@@ -590,6 +605,7 @@ export function relaxGeoPoints({
  * @param {Number=} config.maxMomentum - Maximum momentum for each point
  * @param {Boolean=} config.parallelForces - Sum line segmen parallel forces
  *    as well.
+ * @param {Number=} config.wallForces - Walls forces constant
  * @param {Number=} config.attenuation - Rate of attenuation
  *
  * @return {Object} { polygon, points, geoPoints } Last iteration geo
@@ -606,6 +622,7 @@ export function relaxNGeoPoints({
   viscosity = VISCOSITY,
   maxMomentum = MAXMOMENTUM,
   parallelForces = PARALLELFORCES,
+  wallForces = WALLFORCES,
   attenuation = ATTENUATION,
 }: {
   N: number;
@@ -618,6 +635,7 @@ export function relaxNGeoPoints({
   viscosity?: number;
   maxMomentum?: number;
   parallelForces?: boolean;
+  wallForces?: number;
   attenuation?: number;
 }) {
   const geoPoints = randomInGeoPolygon(N, geoPolygon);
@@ -632,6 +650,7 @@ export function relaxNGeoPoints({
     viscosity,
     maxMomentum,
     parallelForces,
+    wallForces,
     attenuation,
   });
 }
