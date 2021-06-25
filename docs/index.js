@@ -129,7 +129,6 @@ document.addEventListener("DOMContentLoaded", function () {
   let N,
     baseForce,
     drag,
-    viscosity,
     attenuation,
     maxMomentum,
     parallelForces,
@@ -146,7 +145,6 @@ document.addEventListener("DOMContentLoaded", function () {
       polygon,
       baseForce,
       drag,
-      viscosity,
       maxMomentum,
       parallelForces,
       wallForces,
@@ -161,9 +159,6 @@ document.addEventListener("DOMContentLoaded", function () {
         break;
       case "drag":
         drag = value;
-        break;
-      case "viscosity":
-        viscosity = value;
         break;
       case "maxMomentum":
         maxMomentum = value;
@@ -194,7 +189,6 @@ document.addEventListener("DOMContentLoaded", function () {
     N = DEFAULTN;
     baseForce = ocdots.BASEFORCE;
     drag = ocdots.DRAG;
-    viscosity = ocdots.VISCOSITY;
     attenuation = ocdots.ATTENUATION;
     maxMomentum = ocdots.MAXMOMENTUM;
     parallelForces = ocdots.PARALLELFORCES;
@@ -203,7 +197,6 @@ document.addEventListener("DOMContentLoaded", function () {
     window.resetPoints();
     document.getElementById("baseForce").value = baseForce;
     document.getElementById("drag").value = drag;
-    document.getElementById("viscosity").value = viscosity;
     document.getElementById("maxMomentum").value = maxMomentum;
     document.getElementById("N").value = N;
     document.getElementById("parallelForces").checked = parallelForces;
@@ -213,7 +206,6 @@ document.addEventListener("DOMContentLoaded", function () {
   function updateRange() {
     document.getElementById("baseForceValue").innerHTML = baseForce;
     document.getElementById("dragValue").innerHTML = drag;
-    document.getElementById("viscosityValue").innerHTML = viscosity;
     document.getElementById("maxMomentumValue").innerHTML = maxMomentum;
     document.getElementById("wallForcesValue").innerHTML = wallForces;
   }
