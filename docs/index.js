@@ -169,7 +169,6 @@ document.addEventListener("DOMContentLoaded", function () {
       case "wallForces":
         wallForces = value;
         break;
-
     }
     updateRange();
   };
@@ -179,6 +178,19 @@ document.addEventListener("DOMContentLoaded", function () {
       m[0] + shakeMax * Math.random() - shakeMax / 2,
       m[1] + shakeMax * Math.random() - shakeMax / 2,
     ]);
+    for (let i = 0; i < 10; i++) {
+      let m;
+      [points, m] = ocdots.movePoints({
+        points,
+        momentum,
+        polygon,
+        baseForce: 0,
+        drag: 0,
+        maxMomentum: 10,
+        parallelForces,
+        wallForces,
+      });
+    }
   };
   window.resetPoints = () => {
     points = ocdots.randomInPolygon(N, polygon);
