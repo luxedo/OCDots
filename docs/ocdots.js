@@ -29,7 +29,7 @@ export var VISCOSITY = 0.1;
 export var MAXMOMENTUM = 5;
 export var PARALLELFORCES = true;
 export var WALLFORCES = 2;
-export var ATTENUATION = 0.01;
+export var ATTENUATION = 0.001;
 /**
  * Moves points according to the applied forces into it. The forces
  * are: 1) between points, 2) between the point and walls of the
@@ -199,15 +199,15 @@ export function updateMomentum(mt, force, drag, viscosity, maxMomentum) {
     var my = force[1] + mt[1];
     var norm2 = Math.pow(mx, 2) + Math.pow(my, 2);
     var norm = Math.sqrt(norm2);
-    var intensity = norm - drag * norm2;
-    intensity = intensity > maxMomentum ? maxMomentum : intensity;
-    intensity =
-        intensity < 0
-            ? viscosity == 0
-                ? maxMomentum
-                : maxMomentum * Math.exp(-viscosity) // High forces viscosity
-            : intensity;
-    return [(intensity * mx) / norm, (intensity * my) / norm];
+    var m = norm * (1 - drag);
+    m =
+        m < maxMomentum
+            ? m
+            : maxMomentum *
+                Math.exp(-(m - maxMomentum) * 1 * Math.pow(viscosity, 2)) *
+                0.9 +
+                0.1;
+    return [(m * mx) / norm, (m * my) / norm];
 }
 /**
  * Checks if the point pt is inside polygon.

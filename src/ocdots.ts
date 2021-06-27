@@ -25,7 +25,7 @@ export const VISCOSITY = 0.1;
 export const MAXMOMENTUM = 5;
 export const PARALLELFORCES = true;
 export const WALLFORCES = 2;
-export const ATTENUATION = 0.01;
+export const ATTENUATION = 0.001;
 
 // Types
 type vec = [number, number];
@@ -258,15 +258,15 @@ export function updateMomentum(
   const my = force[1] + mt[1];
   const norm2 = Math.pow(mx, 2) + Math.pow(my, 2);
   const norm = Math.sqrt(norm2);
-  let intensity = norm - drag * norm2;
-  intensity = intensity > maxMomentum ? maxMomentum : intensity;
-  intensity =
-    intensity < 0
-      ? viscosity == 0
-        ? maxMomentum
-        : maxMomentum * Math.exp(-viscosity) // High forces viscosity
-      : intensity;
-  return [(intensity * mx) / norm, (intensity * my) / norm];
+  let m = norm * (1 - drag);
+  m =
+    m < maxMomentum
+      ? m
+      : maxMomentum *
+          Math.exp(-(m - maxMomentum) * 1 * Math.pow(viscosity, 2)) *
+          0.9 +
+        0.1;
+  return [(m * mx) / norm, (m * my) / norm];
 }
 
 /**
