@@ -21,6 +21,7 @@
 // Default values
 export const BASEFORCE = 5;
 export const DRAG = 0.1;
+export const VISCOSITY = 0.1;
 export const MAXMOMENTUM = 5;
 export const PARALLELFORCES = true;
 export const WALLFORCES = 2;
@@ -59,6 +60,7 @@ type PolygonArray<T> = {
  *      point.
  * @param {Number=} config.baseForce - The force constant
  * @param {Number=} config.drag - The drag coeficient
+ * @param {Number=} config.viscosity - The viscosity coeficient
  * @param {Number=} config.maxMomentum - Maximum momentum for each point
  * @param {Boolean=} config.parallelForces - Sum line segmen parallel forces
  *    as well.
@@ -72,6 +74,7 @@ export function movePoints({
   polygon,
   baseForce = BASEFORCE,
   drag = DRAG,
+  viscosity = VISCOSITY,
   maxMomentum = MAXMOMENTUM,
   parallelForces = PARALLELFORCES,
   wallForces = WALLFORCES,
@@ -81,6 +84,7 @@ export function movePoints({
   polygon: PolygonArray<vec>;
   baseForce?: number;
   drag?: number;
+  viscosity?: number;
   maxMomentum?: number;
   parallelForces?: boolean;
   wallForces?: number;
@@ -115,23 +119,18 @@ export function movePoints({
       // Polygon forces are normalized to it's total length and
       // multiplied by wallForces
     ];
-    return updateMomentum(mt, force, drag, maxMomentum);
+    return updateMomentum(mt, force, drag, viscosity, maxMomentum);
   });
 
   // Update position
   p = <VecArray<vec>>p.map((pt, i) => {
-    let px, py;
-    let j = 0;
-    do {
-      if (j == 10) {
-        return pt;
-      }
-      px = pt[0] + m[i][0];
-      py = pt[1] + m[i][1];
-      m[i][0] /= 2;
-      m[i][1] /= 2;
-      j++;
-    } while (!checkInbounds([px, py], polygon));
+    const px = pt[0] + m[i][0];
+    const py = pt[1] + m[i][1];
+    if (!checkInbounds([px, py], polygon)) {
+      m[i][0] = 0;
+      m[i][1] = 0;
+      return pt;
+    }
     return [px, py];
   });
   return [<VecArray<vec>>p, <VecArray<vec>>m];
@@ -244,6 +243,7 @@ export function perpendicularToLine(pt: vec, v1: vec, v2: vec): vec {
  * @param {Array} mt Initial momentum
  * @param {Array} force Forcing acting at the point
  * @param {Number} drag The drag coeficient
+ * @param {Number} viscosity The viscosity coeficient
  * @param {Number} maxMomentum Maximum momentum for each point
  * @return {Array} mu Updated momentum
  */
@@ -251,15 +251,22 @@ export function updateMomentum(
   mt: vec,
   force: vec,
   drag: number,
+  viscosity: number,
   maxMomentum: number
 ): vec {
   const mx = force[0] + mt[0];
   const my = force[1] + mt[1];
   const norm2 = Math.pow(mx, 2) + Math.pow(my, 2);
   const norm = Math.sqrt(norm2);
-  let m = norm - drag * norm;
-  m = m > maxMomentum ? maxMomentum : m;
-  return [(m * mx) / norm, (m * my) / norm];
+  let intensity = norm - drag * norm2;
+  intensity = intensity > maxMomentum ? maxMomentum : intensity;
+  intensity =
+    intensity < 0
+      ? viscosity == 0
+        ? maxMomentum
+        : maxMomentum * Math.exp(-viscosity) // High forces viscosity
+      : intensity;
+  return [(intensity * mx) / norm, (intensity * my) / norm];
 }
 
 /**
@@ -359,9 +366,10 @@ export function randomInGeoPolygon(
  * @param {Number} config.iterations - Number of iterations to run
  * @param {Function=} config.callback - Callback function to run at every
  *      iteration (optional). Callback args: points, momentum, polygon,
- *      baseForce, currentDrag, maxMomentum
+ *      baseForce, currentDrag, viscosity, maxMomentum
  * @param {Number=} config.baseForce - The force constant
  * @param {Number=} config.drag - The drag coeficient
+ * @param {Number=} config.viscosity - The viscosity coeficient
  * @param {Number=} config.maxMomentum - Maximum momentum for each point
  * @param {Boolean=} config.parallelForces - Sum line segmen parallel forces
  *    as well.
@@ -378,6 +386,7 @@ export function relaxPoints({
   callback,
   baseForce = BASEFORCE,
   drag = DRAG,
+  viscosity = VISCOSITY,
   maxMomentum = MAXMOMENTUM,
   parallelForces = PARALLELFORCES,
   wallForces = WALLFORCES,
@@ -390,6 +399,7 @@ export function relaxPoints({
   callback?: Function;
   baseForce?: number;
   drag?: number;
+  viscosity?: number;
   maxMomentum?: number;
   parallelForces?: boolean;
   wallForces?: number;
@@ -408,12 +418,21 @@ export function relaxPoints({
       polygon,
       baseForce,
       drag: drag * attIter,
+      viscosity,
       maxMomentum,
       parallelForces,
       wallForces,
     });
     if (callback != undefined) {
-      callback(p, m, polygon, baseForce, drag * attIter, maxMomentum);
+      callback(
+        p,
+        m,
+        polygon,
+        baseForce,
+        drag * attIter,
+        viscosity,
+        maxMomentum
+      );
     }
   }
   return p;
@@ -431,9 +450,10 @@ export function relaxPoints({
  * @param {Number} config.iterations - Number of iterations to run
  * @param {Function=} config.callback - Callback function to run at every
  *      iteration (optional). Callback args: points, momentum, polygon,
- *      baseForce, currentDrag, maxMomentum
+ *      baseForce, currentDrag, viscosity, maxMomentum
  * @param {Number=} config.baseForce - The force constant
  * @param {Number=} config.drag - The drag coeficient
+ * @param {Number=} config.viscosity - The viscosity coeficient
  * @param {Number=} config.maxMomentum - Maximum momentum for each point
  * @param {Boolean=} config.parallelForces - Sum line segmen parallel forces
  *    as well.
@@ -450,6 +470,7 @@ export function relaxNPoints({
   callback,
   baseForce = BASEFORCE,
   drag = DRAG,
+  viscosity = VISCOSITY,
   maxMomentum = MAXMOMENTUM,
   parallelForces = PARALLELFORCES,
   wallForces = WALLFORCES,
@@ -461,6 +482,7 @@ export function relaxNPoints({
   callback?: Function;
   baseForce?: number;
   drag?: number;
+  viscosity?: number;
   maxMomentum?: number;
   parallelForces?: boolean;
   wallForces?: number;
@@ -476,6 +498,7 @@ export function relaxNPoints({
     callback,
     baseForce,
     drag,
+    viscosity,
     maxMomentum,
     parallelForces,
     wallForces,
@@ -494,9 +517,10 @@ export function relaxNPoints({
  * @param {Number} config.iterations - Number of iterations to run
  * @param {Function=} confi.callback - Callback function to run at every
  *      iteration. Callback args: points, momentum, polygon, baseForce,
- *      currentDrag, maxMomentum
+ *      currentDrag, viscosity, maxMomentum
  * @param {Number=} config.baseForce - The force constant
  * @param {Number=} config.drag - The drag coeficient
+ * @param {Number=} config.viscosity - The viscosity coeficient
  * @param {Number=} config.maxMomentum - Maximum momentum for each point
  * @param {Boolean=} config.parallelForces - Sum line segmen parallel forces
  *    as well.
@@ -514,6 +538,7 @@ export function relaxGeoPoints({
   callback,
   baseForce = BASEFORCE,
   drag = DRAG,
+  viscosity = VISCOSITY,
   maxMomentum = MAXMOMENTUM,
   parallelForces = PARALLELFORCES,
   wallForces = WALLFORCES,
@@ -526,6 +551,7 @@ export function relaxGeoPoints({
   callback?: Function;
   baseForce?: number;
   drag?: number;
+  viscosity?: number;
   maxMomentum?: number;
   parallelForces?: boolean;
   wallForces?: number;
@@ -546,6 +572,7 @@ export function relaxGeoPoints({
     callback,
     baseForce,
     drag,
+    viscosity,
     maxMomentum,
     parallelForces,
     wallForces,
@@ -571,9 +598,10 @@ export function relaxGeoPoints({
  * @param {Number} config.iterations - jNumber of iterations to run
  * @param {Function=} config.callback - Callback function to run at every
  *      iteration. Callback args: points, momentum, polygon, baseForce,
- *      currentDrag, maxMomentum
+ *      currentDrag, viscosity, maxMomentum
  * @param {Number=} config.baseForce - The force constant
  * @param {Number=} config.drag - The drag coeficient
+ * @param {Number=} config.viscosity - The viscosity coeficient
  * @param {Number=} config.maxMomentum - Maximum momentum for each point
  * @param {Boolean=} config.parallelForces - Sum line segmen parallel forces
  *    as well.
@@ -591,6 +619,7 @@ export function relaxNGeoPoints({
   callback,
   baseForce = BASEFORCE,
   drag = DRAG,
+  viscosity = VISCOSITY,
   maxMomentum = MAXMOMENTUM,
   parallelForces = PARALLELFORCES,
   wallForces = WALLFORCES,
@@ -603,6 +632,7 @@ export function relaxNGeoPoints({
   callback?: Function;
   baseForce?: number;
   drag?: number;
+  viscosity?: number;
   maxMomentum?: number;
   parallelForces?: boolean;
   wallForces?: number;
@@ -617,6 +647,7 @@ export function relaxNGeoPoints({
     callback,
     baseForce,
     drag,
+    viscosity,
     maxMomentum,
     parallelForces,
     wallForces,

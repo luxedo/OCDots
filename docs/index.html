@@ -94,11 +94,24 @@
                 class="form-control-range ml-1"
                 id="drag"
                 min="0"
-                max="0.95"
-                step="0.05"
+                max="0.2"
+                step="0.005"
                 onchange="setValue('drag', this.value);"
               />
               <label for="drag" id="dragValue" , class="mx-1"></label>
+            </div>
+            <div class="d-flex flex-column mx-1">
+              <label for="viscosity">Viscosity</label>
+              <input
+                type="range"
+                class="form-control-range ml-1"
+                id="viscosity"
+                min="0"
+                max="2"
+                step="0.1"
+                onchange="setValue('viscosity', this.value);"
+              />
+              <label for="viscosity" id="viscosityValue" , class="mx-1"></label>
             </div>
             <div class="d-flex flex-column mx-1">
               <label for="maxMomentum" class="ml-2">Max Momentum</label>
