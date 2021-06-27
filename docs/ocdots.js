@@ -89,14 +89,18 @@ export function movePoints(_a) {
     });
     // Update position
     p = p.map(function (pt, i) {
-        var px = pt[0] + m[i][0];
-        var py = pt[1] + m[i][1];
-        if (!checkInbounds([px, py], polygon)) {
-            m[i][0] = 0;
-            m[i][1] = 0;
-            return pt;
+        for (var j = 0; j < 10; j++) {
+            // We move points as close to the polygon as possible
+            var px = pt[0] + m[i][0];
+            var py = pt[1] + m[i][1];
+            if (checkInbounds([px, py], polygon)) {
+                return [px, py];
+            }
+            // Lose momentum if colliding into the walls
+            m[i][0] /= i + 2;
+            m[i][1] /= i + 2;
         }
-        return [px, py];
+        return pt;
     });
     return [p, m];
 }
@@ -197,16 +201,14 @@ export function perpendicularToLine(pt, v1, v2) {
 export function updateMomentum(mt, force, drag, viscosity, maxMomentum) {
     var mx = force[0] + mt[0];
     var my = force[1] + mt[1];
-    var norm2 = Math.pow(mx, 2) + Math.pow(my, 2);
-    var norm = Math.sqrt(norm2);
+    var norm = Math.sqrt(Math.pow(mx, 2) + Math.pow(my, 2));
     var m = norm * (1 - drag);
     m =
         m < maxMomentum
             ? m
             : maxMomentum *
-                Math.exp(-(m - maxMomentum) * 1 * Math.pow(viscosity, 2)) *
-                0.9 +
-                0.1;
+                (Math.exp(-viscosity * (m - maxMomentum)) * viscosity +
+                    (1 - viscosity));
     return [(m * mx) / norm, (m * my) / norm];
 }
 /**

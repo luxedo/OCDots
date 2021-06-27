@@ -124,14 +124,18 @@ export function movePoints({
 
   // Update position
   p = <VecArray<vec>>p.map((pt, i) => {
-    const px = pt[0] + m[i][0];
-    const py = pt[1] + m[i][1];
-    if (!checkInbounds([px, py], polygon)) {
-      m[i][0] = 0;
-      m[i][1] = 0;
-      return pt;
+    for (let j = 0; j < 10; j++) {
+      // We move points as close to the polygon as possible
+      const px = pt[0] + m[i][0];
+      const py = pt[1] + m[i][1];
+      if (checkInbounds([px, py], polygon)) {
+        return [px, py];
+      }
+      // Lose momentum if colliding into the walls
+      m[i][0] /= i + 2;
+      m[i][1] /= i + 2;
     }
-    return [px, py];
+    return pt;
   });
   return [<VecArray<vec>>p, <VecArray<vec>>m];
 }
@@ -256,16 +260,14 @@ export function updateMomentum(
 ): vec {
   const mx = force[0] + mt[0];
   const my = force[1] + mt[1];
-  const norm2 = Math.pow(mx, 2) + Math.pow(my, 2);
-  const norm = Math.sqrt(norm2);
+  const norm = Math.sqrt(Math.pow(mx, 2) + Math.pow(my, 2));
   let m = norm * (1 - drag);
   m =
     m < maxMomentum
       ? m
       : maxMomentum *
-          Math.exp(-(m - maxMomentum) * 1 * Math.pow(viscosity, 2)) *
-          0.9 +
-        0.1;
+        (Math.exp(-viscosity * (m - maxMomentum)) * viscosity +
+          (1 - viscosity));
   return [(m * mx) / norm, (m * my) / norm];
 }
 
