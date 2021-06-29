@@ -26,6 +26,7 @@ export const MAXMOMENTUM = 5;
 export const PARALLELFORCES = true;
 export const WALLFORCES = 2;
 export const ATTENUATION = 0.001;
+const GEO_MILIMITER_PRECISION = 100000000;
 
 // Types
 type vec = [number, number];
@@ -134,6 +135,10 @@ export function movePoints({
       // Lose momentum if colliding into the walls
       m[i][0] /= i + 2;
       m[i][1] /= i + 2;
+      if (isNaN(m[i][0]) || isNaN(m[i][1])) {
+        m[i][0] = 0;
+        m[i][1] = 0;
+      }
     }
     return pt;
   });
@@ -273,6 +278,9 @@ export function updateMomentum(
 
 /**
  * Checks if the point pt is inside polygon.
+ *
+ * https://en.wikipedia.org/wiki/Even%E2%80%93odd_rule
+ *
  * @private
  *
  * @param {Array} pt The point to measure forces
@@ -284,9 +292,12 @@ export function updateMomentum(
 export function checkInbounds(pt: vec, polygon: PolygonArray<vec>): boolean {
   let inbound = false;
   const [x, y] = pt;
+
   for (let i = 1; i < polygon.length; i++) {
     const [p1x, p1y] = polygon[i - 1];
     const [p2x, p2y] = polygon[i];
+    const t = perpendicularToLine(pt, polygon[i - 1], polygon[i]);
+    if (Math.abs(t[0]) + Math.abs(t[1]) < 1) return false; // Let's spare some trouble
     if (p2y > y != p1y > y && x < p2x + ((p1x - p2x) * (y - p2y)) / (p1y - p2y))
       inbound = !inbound;
   }
@@ -345,11 +356,23 @@ export function randomInGeoPolygon(
   N: number,
   geoPolygon: VecArray<geoVec>
 ): VecArray<geoVec> {
-  return <VecArray<geoVec>>(
-    randomInPolygon(
-      N,
-      <PolygonArray<vec>>geoPolygon.map((p) => <vec>[p.lat, p.lng])
-    ).map((p) => <geoVec>{ lat: p[0], lng: p[1] })
+  return <VecArray<geoVec>>randomInPolygon(
+    N,
+    <PolygonArray<vec>>(
+      geoPolygon.map(
+        (p) =>
+          <vec>[
+            GEO_MILIMITER_PRECISION * p.lat,
+            GEO_MILIMITER_PRECISION * p.lng,
+          ]
+      )
+    )
+  ).map(
+    (p) =>
+      <geoVec>{
+        lat: p[0] / GEO_MILIMITER_PRECISION,
+        lng: p[1] / GEO_MILIMITER_PRECISION,
+      }
   );
 }
 

@@ -30,6 +30,7 @@ export var MAXMOMENTUM = 5;
 export var PARALLELFORCES = true;
 export var WALLFORCES = 2;
 export var ATTENUATION = 0.001;
+var GEO_MILIMITER_PRECISION = 100000000;
 /**
  * Moves points according to the applied forces into it. The forces
  * are: 1) between points, 2) between the point and walls of the
@@ -99,6 +100,10 @@ export function movePoints(_a) {
             // Lose momentum if colliding into the walls
             m[i][0] /= i + 2;
             m[i][1] /= i + 2;
+            if (isNaN(m[i][0]) || isNaN(m[i][1])) {
+                m[i][0] = 0;
+                m[i][1] = 0;
+            }
         }
         return pt;
     });
@@ -213,6 +218,9 @@ export function updateMomentum(mt, force, drag, viscosity, maxMomentum) {
 }
 /**
  * Checks if the point pt is inside polygon.
+ *
+ * https://en.wikipedia.org/wiki/Even%E2%80%93odd_rule
+ *
  * @private
  *
  * @param {Array} pt The point to measure forces
@@ -227,6 +235,9 @@ export function checkInbounds(pt, polygon) {
     for (var i = 1; i < polygon.length; i++) {
         var _a = polygon[i - 1], p1x = _a[0], p1y = _a[1];
         var _b = polygon[i], p2x = _b[0], p2y = _b[1];
+        var t = perpendicularToLine(pt, polygon[i - 1], polygon[i]);
+        if (Math.abs(t[0]) + Math.abs(t[1]) < 1)
+            return false; // Let's spare some trouble
         if (p2y > y != p1y > y && x < p2x + ((p1x - p2x) * (y - p2y)) / (p1y - p2y))
             inbound = !inbound;
     }
@@ -275,7 +286,17 @@ export function randomInPolygon(N, polygon) {
  * @return {Array} points N points inside the geo polygon
  */
 export function randomInGeoPolygon(N, geoPolygon) {
-    return (randomInPolygon(N, geoPolygon.map(function (p) { return [p.lat, p.lng]; })).map(function (p) { return ({ lat: p[0], lng: p[1] }); }));
+    return randomInPolygon(N, (geoPolygon.map(function (p) {
+        return [
+            GEO_MILIMITER_PRECISION * p.lat,
+            GEO_MILIMITER_PRECISION * p.lng,
+        ];
+    }))).map(function (p) {
+        return ({
+            lat: p[0] / GEO_MILIMITER_PRECISION,
+            lng: p[1] / GEO_MILIMITER_PRECISION,
+        });
+    });
 }
 /**
  * Runs several iterations of movePoints(). The drag increases in every
