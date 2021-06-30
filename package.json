@@ -12,7 +12,7 @@
     "dev": "npm install && npm link . && npm link ocdots",
     "build": "npm run-script pretty && npm run-script build-projects && npm run-script build-demo",
     "build-projects": "tsc && tsc --project tsconfig-browser.json",
-    "build-demo": "cp dist.browser/ocdots.js docs/ocdots.js",
+    "build-demo": "cp dist.browser/* docs/",
     "test": "jest --coverage",
     "pretty": "prettier --write \"README.md\" \"test/**/*.js\" \"src/**/*.ts\" \"docs/**/*.html\""
   },
@@ -27,7 +27,6 @@
   ],
   "author": "Luiz Eduardo Amaral",
   "license": "GPL-3.0-or-later",
-  "dependencies": {},
   "devDependencies": {
     "canvas": "^2.6.1",
     "chai": "^4.2.0",

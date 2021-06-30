@@ -17,6 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+import { simplify } from "./simplify.js";
 
 // Default values
 export const BASEFORCE = 5;
@@ -26,7 +27,10 @@ export const MAXMOMENTUM = 5;
 export const PARALLELFORCES = true;
 export const WALLFORCES = 2;
 export const ATTENUATION = 0.001;
+export const SIMPLIFYPOLYGON = 0;
 const GEO_MILIMITER_PRECISION = 100000000;
+const polyCache = new WeakMap();
+const sCache = new WeakMap();
 
 // Types
 type vec = [number, number];
@@ -66,6 +70,7 @@ type PolygonArray<T> = {
  * @param {Boolean=} config.parallelForces - Sum line segmen parallel forces
  *    as well.
  * @param {Number=} config.wallForces - Walls forces constant
+ * @param {Number=} config.simplifyPolygon - Simplify polygon tolerance (0 disabled)
  * @return {Array[]} points, momentum - Updated points and momentum
  *      arrays
  */
@@ -79,6 +84,7 @@ export function movePoints({
   maxMomentum = MAXMOMENTUM,
   parallelForces = PARALLELFORCES,
   wallForces = WALLFORCES,
+  simplifyPolygon = SIMPLIFYPOLYGON,
 }: {
   points: VecArray<vec>;
   momentum: VecArray<vec>;
@@ -89,28 +95,47 @@ export function movePoints({
   maxMomentum?: number;
   parallelForces?: boolean;
   wallForces?: number;
+  simplifyPolygon?: number;
 }): [VecArray<vec>, VecArray<vec>] {
-  if (polygon.length < 3) {
-    throw new RangeError("Polygon must have at least 3 vertices");
+  // Loads/sets cache
+  let S: number, poly: PolygonArray<vec>;
+  if (polyCache.has(polygon)) {
+    poly = polyCache.get(polygon);
+    S = sCache.get(polygon);
+  } else {
+    if (polygon.length < 3) {
+      throw new RangeError("Polygon must have at least 3 vertices");
+    }
+    poly = <PolygonArray<vec>>[...polygon];
+    if (simplifyPolygon != 0) poly = <PolygonArray<vec>>simplify(
+        poly.map((pt) => {
+          return { x: pt[0], y: pt[1] };
+        }),
+        simplifyPolygon,
+        false
+      ).map((pt) => {
+        return <vec>[pt.x, pt.y];
+      });
+    if (
+      poly[0][0] != poly[poly.length - 1][0] ||
+      poly[0][1] != poly[poly.length - 1][1]
+    ) {
+      poly.push(poly[0]);
+    }
+    S = polygon.reduce((acc, cur) => {
+      return acc + Math.sqrt(Math.pow(cur[0], 2) + Math.pow(cur[1], 2));
+    }, 0);
+    polyCache.set(polygon, poly);
+    sCache.set(polygon, S);
   }
+
   let p = <VecArray<vec>>[...points];
   let m = <VecArray<vec>>[...momentum];
   const N = points.length;
 
-  if (
-    polygon[0][0] != polygon[polygon.length - 1][0] ||
-    polygon[0][1] != polygon[polygon.length - 1][1]
-  ) {
-    polygon.push(polygon[0]);
-  }
-
-  const S = polygon.reduce((acc, cur) => {
-    return acc + Math.sqrt(Math.pow(cur[0], 2) + Math.pow(cur[1], 2));
-  }, 0);
-
   // Calculate forces
   const pf = p.map((pt) => pointForces(pt, p));
-  const bf = p.map((pt) => polygonForces(pt, polygon, parallelForces));
+  const bf = p.map((pt) => polygonForces(pt, poly, parallelForces));
 
   // Update momentum
   m = <VecArray<vec>>m.map((mt, i) => {
@@ -129,7 +154,7 @@ export function movePoints({
       // We move points as close to the polygon as possible
       const px = pt[0] + m[i][0];
       const py = pt[1] + m[i][1];
-      if (checkInbounds([px, py], polygon)) {
+      if (checkInbounds([px, py], poly)) {
         return [px, py];
       }
       // Lose momentum if colliding into the walls
@@ -399,6 +424,7 @@ export function randomInGeoPolygon(
  * @param {Boolean=} config.parallelForces - Sum line segmen parallel forces
  *    as well.
  * @param {Number=} config.wallForces - Walls forces constant
+ * @param {Number=} config.simplifyPolygon - Simplify polygon tolerance (0 disabled)
  * @param {Number=} config.attenuation - Rate of attenuation
  *
  * @return {Array} points Last iteration points positions
@@ -415,6 +441,7 @@ export function relaxPoints({
   maxMomentum = MAXMOMENTUM,
   parallelForces = PARALLELFORCES,
   wallForces = WALLFORCES,
+  simplifyPolygon = SIMPLIFYPOLYGON,
   attenuation = ATTENUATION,
 }: {
   points: VecArray<vec>;
@@ -428,6 +455,7 @@ export function relaxPoints({
   maxMomentum?: number;
   parallelForces?: boolean;
   wallForces?: number;
+  simplifyPolygon?: number;
   attenuation?: number;
 }) {
   let p: VecArray<vec> = <VecArray<vec>>[...points];
@@ -447,6 +475,7 @@ export function relaxPoints({
       maxMomentum,
       parallelForces,
       wallForces,
+      simplifyPolygon,
     });
     if (callback != undefined) {
       callback(
@@ -483,6 +512,7 @@ export function relaxPoints({
  * @param {Boolean=} config.parallelForces - Sum line segmen parallel forces
  *    as well.
  * @param {Number=} config.wallForces - Walls forces constant
+ * @param {Number=} config.simplifyPolygon - Simplify polygon tolerance (0 disabled)
  * @param {Number=} config.attenuation - Rate of attenuation
  *
  * @return {Array} points Last iteration points positions
@@ -499,6 +529,7 @@ export function relaxNPoints({
   maxMomentum = MAXMOMENTUM,
   parallelForces = PARALLELFORCES,
   wallForces = WALLFORCES,
+  simplifyPolygon = SIMPLIFYPOLYGON,
   attenuation = ATTENUATION,
 }: {
   N: number;
@@ -511,6 +542,7 @@ export function relaxNPoints({
   maxMomentum?: number;
   parallelForces?: boolean;
   wallForces?: number;
+  simplifyPolygon?: number;
   attenuation?: number;
 }) {
   const points = randomInPolygon(N, polygon);
@@ -527,6 +559,7 @@ export function relaxNPoints({
     maxMomentum,
     parallelForces,
     wallForces,
+    simplifyPolygon,
     attenuation,
   });
 }
@@ -550,6 +583,7 @@ export function relaxNPoints({
  * @param {Boolean=} config.parallelForces - Sum line segmen parallel forces
  *    as well.
  * @param {Number=} config.wallForces - Walls forces constant
+ * @param {Number=} config.simplifyPolygon - Simplify polygon tolerance (0 disabled)
  * @param {Number=} config.attenuation - Rate of attenuation
  *
  * @return {Object} { polygon, points, geoPoints } Last iteration geo
@@ -567,6 +601,7 @@ export function relaxGeoPoints({
   maxMomentum = MAXMOMENTUM,
   parallelForces = PARALLELFORCES,
   wallForces = WALLFORCES,
+  simplifyPolygon = SIMPLIFYPOLYGON,
   attenuation = ATTENUATION,
 }: {
   geoPoints: VecArray<geoVec>;
@@ -580,6 +615,7 @@ export function relaxGeoPoints({
   maxMomentum?: number;
   parallelForces?: boolean;
   wallForces?: number;
+  simplifyPolygon?: number;
   attenuation?: number;
 }) {
   const { polygon, minLat, minLng, delta } = buildPolygon(geoPolygon, width);
@@ -601,6 +637,7 @@ export function relaxGeoPoints({
     maxMomentum,
     parallelForces,
     wallForces,
+    simplifyPolygon,
     attenuation,
   });
   return {
@@ -631,6 +668,7 @@ export function relaxGeoPoints({
  * @param {Boolean=} config.parallelForces - Sum line segmen parallel forces
  *    as well.
  * @param {Number=} config.wallForces - Walls forces constant
+ * @param {Number=} config.simplifyPolygon - Simplify polygon tolerance (0 disabled)
  * @param {Number=} config.attenuation - Rate of attenuation
  *
  * @return {Object} { polygon, points, geoPoints } Last iteration geo
@@ -648,6 +686,7 @@ export function relaxNGeoPoints({
   maxMomentum = MAXMOMENTUM,
   parallelForces = PARALLELFORCES,
   wallForces = WALLFORCES,
+  simplifyPolygon = SIMPLIFYPOLYGON,
   attenuation = ATTENUATION,
 }: {
   N: number;
@@ -661,6 +700,7 @@ export function relaxNGeoPoints({
   maxMomentum?: number;
   parallelForces?: boolean;
   wallForces?: number;
+  simplifyPolygon?: number;
   attenuation?: number;
 }) {
   const geoPoints = randomInGeoPolygon(N, geoPolygon);
@@ -676,6 +716,7 @@ export function relaxNGeoPoints({
     maxMomentum,
     parallelForces,
     wallForces,
+    simplifyPolygon,
     attenuation,
   });
 }
@@ -717,7 +758,6 @@ export function buildPolygon(
       (v) => <vec>[delta * (v.lat - minLat), delta * (v.lng - minLng)]
     )
   );
-  // polygon = sortPolygon(polygon);
   if (
     polygon[0][0] != polygon[polygon.length - 1][0] ||
     polygon[0][1] != polygon[polygon.length - 1][1]
@@ -725,30 +765,6 @@ export function buildPolygon(
     polygon.push(polygon[0]);
   }
   return { polygon, minLat, minLng, delta };
-}
-
-/**
- * Sorts the polygon vertexes.
- * @private
- *
- * @param {Array} polygon Set of points that describes the polygon
- * @return {Array} polygon Sorted polygon
- */
-export function sortPolygon(polygon) {
-  const centroid = polygon.reduce(
-    (acc, v, i, arr) => [
-      acc[0] + v[0] / arr.length,
-      acc[1] + v[1] / arr.length,
-    ],
-    [0, 0]
-  );
-  polygon = polygon.sort(
-    (a, b) =>
-      Math.atan2(b[1] - centroid[1], b[0] - centroid[0]) -
-      Math.atan2(a[1] - centroid[1], a[0] - centroid[0])
-  );
-  polygon.push(polygon[0]);
-  return polygon;
 }
 
 /**

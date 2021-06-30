@@ -1,3 +1,8 @@
+var __spreadArray = (this && this.__spreadArray) || function (to, from) {
+    for (var i = 0, il = from.length, j = to.length; i < il; i++, j++)
+        to[j] = from[i];
+    return to;
+};
 /**
  * OCDots
  *
@@ -17,11 +22,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-var __spreadArray = (this && this.__spreadArray) || function (to, from) {
-    for (var i = 0, il = from.length, j = to.length; i < il; i++, j++)
-        to[j] = from[i];
-    return to;
-};
+import { simplify } from "./simplify.js";
 // Default values
 export var BASEFORCE = 5;
 export var DRAG = 0.1;
@@ -30,7 +31,10 @@ export var MAXMOMENTUM = 5;
 export var PARALLELFORCES = true;
 export var WALLFORCES = 2;
 export var ATTENUATION = 0.001;
+export var SIMPLIFYPOLYGON = 0;
 var GEO_MILIMITER_PRECISION = 100000000;
+var polyCache = new WeakMap();
+var sCache = new WeakMap();
 /**
  * Moves points according to the applied forces into it. The forces
  * are: 1) between points, 2) between the point and walls of the
@@ -57,27 +61,45 @@ var GEO_MILIMITER_PRECISION = 100000000;
  * @param {Boolean=} config.parallelForces - Sum line segmen parallel forces
  *    as well.
  * @param {Number=} config.wallForces - Walls forces constant
+ * @param {Number=} config.simplifyPolygon - Simplify polygon tolerance (0 disabled)
  * @return {Array[]} points, momentum - Updated points and momentum
  *      arrays
  */
 export function movePoints(_a) {
-    var points = _a.points, momentum = _a.momentum, polygon = _a.polygon, _b = _a.baseForce, baseForce = _b === void 0 ? BASEFORCE : _b, _c = _a.drag, drag = _c === void 0 ? DRAG : _c, _d = _a.viscosity, viscosity = _d === void 0 ? VISCOSITY : _d, _e = _a.maxMomentum, maxMomentum = _e === void 0 ? MAXMOMENTUM : _e, _f = _a.parallelForces, parallelForces = _f === void 0 ? PARALLELFORCES : _f, _g = _a.wallForces, wallForces = _g === void 0 ? WALLFORCES : _g;
-    if (polygon.length < 3) {
-        throw new RangeError("Polygon must have at least 3 vertices");
+    var points = _a.points, momentum = _a.momentum, polygon = _a.polygon, _b = _a.baseForce, baseForce = _b === void 0 ? BASEFORCE : _b, _c = _a.drag, drag = _c === void 0 ? DRAG : _c, _d = _a.viscosity, viscosity = _d === void 0 ? VISCOSITY : _d, _e = _a.maxMomentum, maxMomentum = _e === void 0 ? MAXMOMENTUM : _e, _f = _a.parallelForces, parallelForces = _f === void 0 ? PARALLELFORCES : _f, _g = _a.wallForces, wallForces = _g === void 0 ? WALLFORCES : _g, _h = _a.simplifyPolygon, simplifyPolygon = _h === void 0 ? SIMPLIFYPOLYGON : _h;
+    // Loads/sets cache
+    var S, poly;
+    if (polyCache.has(polygon)) {
+        poly = polyCache.get(polygon);
+        S = sCache.get(polygon);
+    }
+    else {
+        if (polygon.length < 3) {
+            throw new RangeError("Polygon must have at least 3 vertices");
+        }
+        poly = __spreadArray([], polygon);
+        if (simplifyPolygon != 0)
+            poly = simplify(poly.map(function (pt) {
+                return { x: pt[0], y: pt[1] };
+            }), simplifyPolygon, false).map(function (pt) {
+                return [pt.x, pt.y];
+            });
+        if (poly[0][0] != poly[poly.length - 1][0] ||
+            poly[0][1] != poly[poly.length - 1][1]) {
+            poly.push(poly[0]);
+        }
+        S = polygon.reduce(function (acc, cur) {
+            return acc + Math.sqrt(Math.pow(cur[0], 2) + Math.pow(cur[1], 2));
+        }, 0);
+        polyCache.set(polygon, poly);
+        sCache.set(polygon, S);
     }
     var p = __spreadArray([], points);
     var m = __spreadArray([], momentum);
     var N = points.length;
-    if (polygon[0][0] != polygon[polygon.length - 1][0] ||
-        polygon[0][1] != polygon[polygon.length - 1][1]) {
-        polygon.push(polygon[0]);
-    }
-    var S = polygon.reduce(function (acc, cur) {
-        return acc + Math.sqrt(Math.pow(cur[0], 2) + Math.pow(cur[1], 2));
-    }, 0);
     // Calculate forces
     var pf = p.map(function (pt) { return pointForces(pt, p); });
-    var bf = p.map(function (pt) { return polygonForces(pt, polygon, parallelForces); });
+    var bf = p.map(function (pt) { return polygonForces(pt, poly, parallelForces); });
     // Update momentum
     m = m.map(function (mt, i) {
         var force = [
@@ -94,7 +116,7 @@ export function movePoints(_a) {
             // We move points as close to the polygon as possible
             var px = pt[0] + m[i][0];
             var py = pt[1] + m[i][1];
-            if (checkInbounds([px, py], polygon)) {
+            if (checkInbounds([px, py], poly)) {
                 return [px, py];
             }
             // Lose momentum if colliding into the walls
@@ -321,13 +343,14 @@ export function randomInGeoPolygon(N, geoPolygon) {
  * @param {Boolean=} config.parallelForces - Sum line segmen parallel forces
  *    as well.
  * @param {Number=} config.wallForces - Walls forces constant
+ * @param {Number=} config.simplifyPolygon - Simplify polygon tolerance (0 disabled)
  * @param {Number=} config.attenuation - Rate of attenuation
  *
  * @return {Array} points Last iteration points positions
  */
 export function relaxPoints(_a) {
     var _b;
-    var points = _a.points, momentum = _a.momentum, polygon = _a.polygon, iterations = _a.iterations, callback = _a.callback, _c = _a.baseForce, baseForce = _c === void 0 ? BASEFORCE : _c, _d = _a.drag, drag = _d === void 0 ? DRAG : _d, _e = _a.viscosity, viscosity = _e === void 0 ? VISCOSITY : _e, _f = _a.maxMomentum, maxMomentum = _f === void 0 ? MAXMOMENTUM : _f, _g = _a.parallelForces, parallelForces = _g === void 0 ? PARALLELFORCES : _g, _h = _a.wallForces, wallForces = _h === void 0 ? WALLFORCES : _h, _j = _a.attenuation, attenuation = _j === void 0 ? ATTENUATION : _j;
+    var points = _a.points, momentum = _a.momentum, polygon = _a.polygon, iterations = _a.iterations, callback = _a.callback, _c = _a.baseForce, baseForce = _c === void 0 ? BASEFORCE : _c, _d = _a.drag, drag = _d === void 0 ? DRAG : _d, _e = _a.viscosity, viscosity = _e === void 0 ? VISCOSITY : _e, _f = _a.maxMomentum, maxMomentum = _f === void 0 ? MAXMOMENTUM : _f, _g = _a.parallelForces, parallelForces = _g === void 0 ? PARALLELFORCES : _g, _h = _a.wallForces, wallForces = _h === void 0 ? WALLFORCES : _h, _j = _a.simplifyPolygon, simplifyPolygon = _j === void 0 ? SIMPLIFYPOLYGON : _j, _k = _a.attenuation, attenuation = _k === void 0 ? ATTENUATION : _k;
     var p = __spreadArray([], points);
     var m = ((momentum == undefined ? p.map(function () { return [0, 0]; }) : __spreadArray([], momentum)));
     var att = 1 + attenuation;
@@ -342,6 +365,7 @@ export function relaxPoints(_a) {
             maxMomentum: maxMomentum,
             parallelForces: parallelForces,
             wallForces: wallForces,
+            simplifyPolygon: simplifyPolygon,
         }), p = _b[0], m = _b[1];
         if (callback != undefined) {
             callback(p, m, polygon, baseForce, drag * attIter, viscosity, maxMomentum);
@@ -369,12 +393,13 @@ export function relaxPoints(_a) {
  * @param {Boolean=} config.parallelForces - Sum line segmen parallel forces
  *    as well.
  * @param {Number=} config.wallForces - Walls forces constant
+ * @param {Number=} config.simplifyPolygon - Simplify polygon tolerance (0 disabled)
  * @param {Number=} config.attenuation - Rate of attenuation
  *
  * @return {Array} points Last iteration points positions
  */
 export function relaxNPoints(_a) {
-    var N = _a.N, polygon = _a.polygon, iterations = _a.iterations, callback = _a.callback, _b = _a.baseForce, baseForce = _b === void 0 ? BASEFORCE : _b, _c = _a.drag, drag = _c === void 0 ? DRAG : _c, _d = _a.viscosity, viscosity = _d === void 0 ? VISCOSITY : _d, _e = _a.maxMomentum, maxMomentum = _e === void 0 ? MAXMOMENTUM : _e, _f = _a.parallelForces, parallelForces = _f === void 0 ? PARALLELFORCES : _f, _g = _a.wallForces, wallForces = _g === void 0 ? WALLFORCES : _g, _h = _a.attenuation, attenuation = _h === void 0 ? ATTENUATION : _h;
+    var N = _a.N, polygon = _a.polygon, iterations = _a.iterations, callback = _a.callback, _b = _a.baseForce, baseForce = _b === void 0 ? BASEFORCE : _b, _c = _a.drag, drag = _c === void 0 ? DRAG : _c, _d = _a.viscosity, viscosity = _d === void 0 ? VISCOSITY : _d, _e = _a.maxMomentum, maxMomentum = _e === void 0 ? MAXMOMENTUM : _e, _f = _a.parallelForces, parallelForces = _f === void 0 ? PARALLELFORCES : _f, _g = _a.wallForces, wallForces = _g === void 0 ? WALLFORCES : _g, _h = _a.simplifyPolygon, simplifyPolygon = _h === void 0 ? SIMPLIFYPOLYGON : _h, _j = _a.attenuation, attenuation = _j === void 0 ? ATTENUATION : _j;
     var points = randomInPolygon(N, polygon);
     var momentum = points.map(function () { return [0, 0]; });
     return relaxPoints({
@@ -389,6 +414,7 @@ export function relaxNPoints(_a) {
         maxMomentum: maxMomentum,
         parallelForces: parallelForces,
         wallForces: wallForces,
+        simplifyPolygon: simplifyPolygon,
         attenuation: attenuation,
     });
 }
@@ -411,14 +437,15 @@ export function relaxNPoints(_a) {
  * @param {Boolean=} config.parallelForces - Sum line segmen parallel forces
  *    as well.
  * @param {Number=} config.wallForces - Walls forces constant
+ * @param {Number=} config.simplifyPolygon - Simplify polygon tolerance (0 disabled)
  * @param {Number=} config.attenuation - Rate of attenuation
  *
  * @return {Object} { polygon, points, geoPoints } Last iteration geo
  *      points positions
  */
 export function relaxGeoPoints(_a) {
-    var geoPoints = _a.geoPoints, geoPolygon = _a.geoPolygon, width = _a.width, iterations = _a.iterations, callback = _a.callback, _b = _a.baseForce, baseForce = _b === void 0 ? BASEFORCE : _b, _c = _a.drag, drag = _c === void 0 ? DRAG : _c, _d = _a.viscosity, viscosity = _d === void 0 ? VISCOSITY : _d, _e = _a.maxMomentum, maxMomentum = _e === void 0 ? MAXMOMENTUM : _e, _f = _a.parallelForces, parallelForces = _f === void 0 ? PARALLELFORCES : _f, _g = _a.wallForces, wallForces = _g === void 0 ? WALLFORCES : _g, _h = _a.attenuation, attenuation = _h === void 0 ? ATTENUATION : _h;
-    var _j = buildPolygon(geoPolygon, width), polygon = _j.polygon, minLat = _j.minLat, minLng = _j.minLng, delta = _j.delta;
+    var geoPoints = _a.geoPoints, geoPolygon = _a.geoPolygon, width = _a.width, iterations = _a.iterations, callback = _a.callback, _b = _a.baseForce, baseForce = _b === void 0 ? BASEFORCE : _b, _c = _a.drag, drag = _c === void 0 ? DRAG : _c, _d = _a.viscosity, viscosity = _d === void 0 ? VISCOSITY : _d, _e = _a.maxMomentum, maxMomentum = _e === void 0 ? MAXMOMENTUM : _e, _f = _a.parallelForces, parallelForces = _f === void 0 ? PARALLELFORCES : _f, _g = _a.wallForces, wallForces = _g === void 0 ? WALLFORCES : _g, _h = _a.simplifyPolygon, simplifyPolygon = _h === void 0 ? SIMPLIFYPOLYGON : _h, _j = _a.attenuation, attenuation = _j === void 0 ? ATTENUATION : _j;
+    var _k = buildPolygon(geoPolygon, width), polygon = _k.polygon, minLat = _k.minLat, minLng = _k.minLng, delta = _k.delta;
     var momentum = geoPoints.map(function () { return [0, 0]; });
     var points = relaxPoints({
         points: (geoPoints.map(function (p) { return [(p.lat - minLat) * delta, (p.lng - minLng) * delta]; })),
@@ -432,6 +459,7 @@ export function relaxGeoPoints(_a) {
         maxMomentum: maxMomentum,
         parallelForces: parallelForces,
         wallForces: wallForces,
+        simplifyPolygon: simplifyPolygon,
         attenuation: attenuation,
     });
     return {
@@ -461,13 +489,14 @@ export function relaxGeoPoints(_a) {
  * @param {Boolean=} config.parallelForces - Sum line segmen parallel forces
  *    as well.
  * @param {Number=} config.wallForces - Walls forces constant
+ * @param {Number=} config.simplifyPolygon - Simplify polygon tolerance (0 disabled)
  * @param {Number=} config.attenuation - Rate of attenuation
  *
  * @return {Object} { polygon, points, geoPoints } Last iteration geo
  *      points positions
  */
 export function relaxNGeoPoints(_a) {
-    var N = _a.N, geoPolygon = _a.geoPolygon, width = _a.width, iterations = _a.iterations, callback = _a.callback, _b = _a.baseForce, baseForce = _b === void 0 ? BASEFORCE : _b, _c = _a.drag, drag = _c === void 0 ? DRAG : _c, _d = _a.viscosity, viscosity = _d === void 0 ? VISCOSITY : _d, _e = _a.maxMomentum, maxMomentum = _e === void 0 ? MAXMOMENTUM : _e, _f = _a.parallelForces, parallelForces = _f === void 0 ? PARALLELFORCES : _f, _g = _a.wallForces, wallForces = _g === void 0 ? WALLFORCES : _g, _h = _a.attenuation, attenuation = _h === void 0 ? ATTENUATION : _h;
+    var N = _a.N, geoPolygon = _a.geoPolygon, width = _a.width, iterations = _a.iterations, callback = _a.callback, _b = _a.baseForce, baseForce = _b === void 0 ? BASEFORCE : _b, _c = _a.drag, drag = _c === void 0 ? DRAG : _c, _d = _a.viscosity, viscosity = _d === void 0 ? VISCOSITY : _d, _e = _a.maxMomentum, maxMomentum = _e === void 0 ? MAXMOMENTUM : _e, _f = _a.parallelForces, parallelForces = _f === void 0 ? PARALLELFORCES : _f, _g = _a.wallForces, wallForces = _g === void 0 ? WALLFORCES : _g, _h = _a.simplifyPolygon, simplifyPolygon = _h === void 0 ? SIMPLIFYPOLYGON : _h, _j = _a.attenuation, attenuation = _j === void 0 ? ATTENUATION : _j;
     var geoPoints = randomInGeoPolygon(N, geoPolygon);
     return relaxGeoPoints({
         geoPoints: geoPoints,
@@ -481,6 +510,7 @@ export function relaxNGeoPoints(_a) {
         maxMomentum: maxMomentum,
         parallelForces: parallelForces,
         wallForces: wallForces,
+        simplifyPolygon: simplifyPolygon,
         attenuation: attenuation,
     });
 }
@@ -506,31 +536,11 @@ export function buildPolygon(geoPolygon, width) {
     }), minLat = _a.minLat, maxLat = _a.maxLat, minLng = _a.minLng, maxLng = _a.maxLng;
     var delta = width / (maxLng - minLng);
     var polygon = (geoPolygon.map(function (v) { return [delta * (v.lat - minLat), delta * (v.lng - minLng)]; }));
-    // polygon = sortPolygon(polygon);
     if (polygon[0][0] != polygon[polygon.length - 1][0] ||
         polygon[0][1] != polygon[polygon.length - 1][1]) {
         polygon.push(polygon[0]);
     }
     return { polygon: polygon, minLat: minLat, minLng: minLng, delta: delta };
-}
-/**
- * Sorts the polygon vertexes.
- * @private
- *
- * @param {Array} polygon Set of points that describes the polygon
- * @return {Array} polygon Sorted polygon
- */
-export function sortPolygon(polygon) {
-    var centroid = polygon.reduce(function (acc, v, i, arr) { return [
-        acc[0] + v[0] / arr.length,
-        acc[1] + v[1] / arr.length,
-    ]; }, [0, 0]);
-    polygon = polygon.sort(function (a, b) {
-        return Math.atan2(b[1] - centroid[1], b[0] - centroid[0]) -
-            Math.atan2(a[1] - centroid[1], a[0] - centroid[0]);
-    });
-    polygon.push(polygon[0]);
-    return polygon;
 }
 /**
  * Plots a polygon in the canvas
