@@ -20,6 +20,7 @@
 import { simplify } from "./simplify.js";
 
 // Default values
+export const DEFAULTMASS = 1;
 export const BASEFORCE = 5;
 export const DRAG = 0.1;
 export const VISCOSITY = 0.1;
@@ -63,6 +64,7 @@ type PolygonArray<T> = {
  *      contains the points. This polygon should be ordered (clockwise
  *      or anticlockwise) and closed i.e. first points equals the last
  *      point.
+ * @param {Number[] | Number=} config.mass - Mass or masses of the points.
  * @param {Number=} config.baseForce - The force constant
  * @param {Number=} config.drag - The drag coeficient
  * @param {Number=} config.viscosity - The viscosity coeficient
@@ -78,6 +80,7 @@ export function movePoints({
   points,
   momentum,
   polygon,
+  mass = DEFAULTMASS,
   baseForce = BASEFORCE,
   drag = DRAG,
   viscosity = VISCOSITY,
@@ -89,6 +92,7 @@ export function movePoints({
   points: VecArray<vec>;
   momentum: VecArray<vec>;
   polygon: PolygonArray<vec>;
+  mass?: number[] | number;
   baseForce?: number;
   drag?: number;
   viscosity?: number;
@@ -99,10 +103,7 @@ export function movePoints({
 }): [VecArray<vec>, VecArray<vec>] {
   // Loads/sets cache
   let S: number, poly: PolygonArray<vec>;
-  if (polyCache.has(polygon)) {
-    poly = polyCache.get(polygon);
-    S = sCache.get(polygon);
-  } else {
+  if (!polyCache.has(polygon)) {
     if (polygon.length < 3) {
       throw new RangeError("Polygon must have at least 3 vertices");
     }
@@ -127,10 +128,19 @@ export function movePoints({
     }, 0);
     polyCache.set(polygon, poly);
     sCache.set(polygon, S);
+  } else {
+    poly = polyCache.get(polygon);
+    S = sCache.get(polygon);
   }
 
   let p = <VecArray<vec>>[...points];
   let m = <VecArray<vec>>[...momentum];
+  const _mass: number[] = Array.isArray(mass)
+    ? mass
+    : typeof mass == "number"
+    ? new Array(p.length).fill(mass)
+    : new Array(p.length).fill(1);
+  if (_mass.includes(0)) throw new RangeError("Mass cannot be zero.");
   const N = points.length;
 
   // Calculate forces
@@ -145,7 +155,7 @@ export function movePoints({
       // Polygon forces are normalized to it's total length and
       // multiplied by wallForces
     ];
-    return updateMomentum(mt, force, drag, viscosity, maxMomentum);
+    return updateMomentum(mt, force, _mass[i], drag, viscosity, maxMomentum);
   });
 
   // Update position
@@ -276,6 +286,7 @@ export function perpendicularToLine(pt: vec, v1: vec, v2: vec): vec {
  *
  * @param {Array} mt Initial momentum
  * @param {Array} force Forcing acting at the point
+ * @param {Number} mass Point mass
  * @param {Number} drag The drag coeficient
  * @param {Number} viscosity The viscosity coeficient
  * @param {Number} maxMomentum Maximum momentum for each point
@@ -284,12 +295,13 @@ export function perpendicularToLine(pt: vec, v1: vec, v2: vec): vec {
 export function updateMomentum(
   mt: vec,
   force: vec,
+  mass: number,
   drag: number,
   viscosity: number,
   maxMomentum: number
 ): vec {
-  const mx = force[0] + mt[0];
-  const my = force[1] + mt[1];
+  const mx = force[0] / mass + mt[0];
+  const my = force[1] / mass + mt[1];
   const norm = Math.sqrt(Math.pow(mx, 2) + Math.pow(my, 2));
   let m = norm * (1 - drag);
   m =
@@ -417,6 +429,7 @@ export function randomInGeoPolygon(
  * @param {Function=} config.callback - Callback function to run at every
  *      iteration (optional). Callback args: points, momentum, polygon,
  *      baseForce, currentDrag, viscosity, maxMomentum
+ * @param {Number[] | Number=} config.mass - Mass or masses of the points.
  * @param {Number=} config.baseForce - The force constant
  * @param {Number=} config.drag - The drag coeficient
  * @param {Number=} config.viscosity - The viscosity coeficient
@@ -435,6 +448,7 @@ export function relaxPoints({
   polygon,
   iterations,
   callback,
+  mass = DEFAULTMASS,
   baseForce = BASEFORCE,
   drag = DRAG,
   viscosity = VISCOSITY,
@@ -449,6 +463,7 @@ export function relaxPoints({
   polygon: PolygonArray<vec>;
   iterations: number;
   callback?: Function;
+  mass?: number[] | number;
   baseForce?: number;
   drag?: number;
   viscosity?: number;
@@ -469,6 +484,7 @@ export function relaxPoints({
       points: p,
       momentum: m,
       polygon,
+      mass,
       baseForce,
       drag: drag * attIter,
       viscosity,
@@ -505,6 +521,7 @@ export function relaxPoints({
  * @param {Function=} config.callback - Callback function to run at every
  *      iteration (optional). Callback args: points, momentum, polygon,
  *      baseForce, currentDrag, viscosity, maxMomentum
+ * @param {Number[] | Number=} config.mass - Mass or masses of the points.
  * @param {Number=} config.baseForce - The force constant
  * @param {Number=} config.drag - The drag coeficient
  * @param {Number=} config.viscosity - The viscosity coeficient
@@ -523,6 +540,7 @@ export function relaxNPoints({
   polygon,
   iterations,
   callback,
+  mass = DEFAULTMASS,
   baseForce = BASEFORCE,
   drag = DRAG,
   viscosity = VISCOSITY,
@@ -536,6 +554,7 @@ export function relaxNPoints({
   polygon: PolygonArray<vec>;
   iterations: number;
   callback?: Function;
+  mass?: number[] | number;
   baseForce?: number;
   drag?: number;
   viscosity?: number;
@@ -553,6 +572,7 @@ export function relaxNPoints({
     polygon,
     iterations,
     callback,
+    mass,
     baseForce,
     drag,
     viscosity,
@@ -576,6 +596,7 @@ export function relaxNPoints({
  * @param {Function=} confi.callback - Callback function to run at every
  *      iteration. Callback args: points, momentum, polygon, baseForce,
  *      currentDrag, viscosity, maxMomentum
+ * @param {Number[] | Number=} config.mass - Mass or masses of the points.
  * @param {Number=} config.baseForce - The force constant
  * @param {Number=} config.drag - The drag coeficient
  * @param {Number=} config.viscosity - The viscosity coeficient
@@ -595,6 +616,7 @@ export function relaxGeoPoints({
   width,
   iterations,
   callback,
+  mass = DEFAULTMASS,
   baseForce = BASEFORCE,
   drag = DRAG,
   viscosity = VISCOSITY,
@@ -609,6 +631,7 @@ export function relaxGeoPoints({
   width: number;
   iterations: number;
   callback?: Function;
+  mass?: number[] | number;
   baseForce?: number;
   drag?: number;
   viscosity?: number;
@@ -631,6 +654,7 @@ export function relaxGeoPoints({
     polygon,
     iterations,
     callback,
+    mass,
     baseForce,
     drag,
     viscosity,
@@ -661,6 +685,7 @@ export function relaxGeoPoints({
  * @param {Function=} config.callback - Callback function to run at every
  *      iteration. Callback args: points, momentum, polygon, baseForce,
  *      currentDrag, viscosity, maxMomentum
+ * @param {Number[] | Number=} config.mass - Mass or masses of the points.
  * @param {Number=} config.baseForce - The force constant
  * @param {Number=} config.drag - The drag coeficient
  * @param {Number=} config.viscosity - The viscosity coeficient
@@ -680,6 +705,7 @@ export function relaxNGeoPoints({
   width,
   iterations,
   callback,
+  mass = DEFAULTMASS,
   baseForce = BASEFORCE,
   drag = DRAG,
   viscosity = VISCOSITY,
@@ -694,6 +720,7 @@ export function relaxNGeoPoints({
   width: number;
   iterations: number;
   callback?: Function;
+  mass?: number[] | number;
   baseForce?: number;
   drag?: number;
   viscosity?: number;
@@ -709,6 +736,7 @@ export function relaxNGeoPoints({
     geoPolygon,
     width,
     iterations,
+    mass,
     callback,
     baseForce,
     drag,
