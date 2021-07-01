@@ -15,7 +15,6 @@
  */
 const { assert } = require("chai");
 const ocdots = require("ocdots");
-const { createCanvas } = require("canvas");
 
 const size = 500;
 const squarePolygon = [
@@ -247,12 +246,6 @@ describe("Test public functions", () => {
       assert.isAtLeast(minDist, 50);
     });
   });
-  it("Draws points into a canvas", () => {
-    const canvas = createCanvas();
-    const N = 20;
-    const points = ocdots.randomInPolygon(N, squarePolygon);
-    ocdots.drawPolygonAndPoints(canvas, points, squarePolygon);
-  });
   it("Runs without parallelForces", () => {
     const N = 10;
     const iterations = 900;
@@ -284,7 +277,7 @@ describe("Test public functions", () => {
       baseForce: 5,
       viscosity: 0,
       width,
-      simplifyPolygon: 10,
+      simplifyPolygon: 5,
       iterations,
     });
     pf.points.forEach((pt1, idx1, arr) => {

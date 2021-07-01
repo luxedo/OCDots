@@ -25,6 +25,7 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from) {
 import { simplify } from "./simplify.js";
 // Default values
 export var DEFAULTMASS = 1;
+export var DEFAULTCHARGE = 1;
 export var BASEFORCE = 5;
 export var DRAG = 0.1;
 export var VISCOSITY = 0.1;
@@ -56,6 +57,7 @@ var sCache = new WeakMap();
  *      or anticlockwise) and closed i.e. first points equals the last
  *      point.
  * @param {Number[] | Number=} config.mass - Mass or masses of the points.
+ * @param {Number[] | Number=} config.charge - Charge or charges of the points.
  * @param {Number=} config.baseForce - The force constant
  * @param {Number=} config.drag - The drag coeficient
  * @param {Number=} config.viscosity - The viscosity coeficient
@@ -68,7 +70,7 @@ var sCache = new WeakMap();
  *      arrays
  */
 export function movePoints(_a) {
-    var points = _a.points, momentum = _a.momentum, polygon = _a.polygon, _b = _a.mass, mass = _b === void 0 ? DEFAULTMASS : _b, _c = _a.baseForce, baseForce = _c === void 0 ? BASEFORCE : _c, _d = _a.drag, drag = _d === void 0 ? DRAG : _d, _e = _a.viscosity, viscosity = _e === void 0 ? VISCOSITY : _e, _f = _a.maxMomentum, maxMomentum = _f === void 0 ? MAXMOMENTUM : _f, _g = _a.parallelForces, parallelForces = _g === void 0 ? PARALLELFORCES : _g, _h = _a.wallForces, wallForces = _h === void 0 ? WALLFORCES : _h, _j = _a.simplifyPolygon, simplifyPolygon = _j === void 0 ? SIMPLIFYPOLYGON : _j;
+    var points = _a.points, momentum = _a.momentum, polygon = _a.polygon, _b = _a.mass, mass = _b === void 0 ? DEFAULTMASS : _b, _c = _a.charge, charge = _c === void 0 ? DEFAULTCHARGE : _c, _d = _a.baseForce, baseForce = _d === void 0 ? BASEFORCE : _d, _e = _a.drag, drag = _e === void 0 ? DRAG : _e, _f = _a.viscosity, viscosity = _f === void 0 ? VISCOSITY : _f, _g = _a.maxMomentum, maxMomentum = _g === void 0 ? MAXMOMENTUM : _g, _h = _a.parallelForces, parallelForces = _h === void 0 ? PARALLELFORCES : _h, _j = _a.wallForces, wallForces = _j === void 0 ? WALLFORCES : _j, _k = _a.simplifyPolygon, simplifyPolygon = _k === void 0 ? SIMPLIFYPOLYGON : _k;
     // Loads/sets cache
     var S, poly;
     if (!polyCache.has(polygon)) {
@@ -100,14 +102,15 @@ export function movePoints(_a) {
     var m = __spreadArray([], momentum);
     var _mass = Array.isArray(mass)
         ? mass
-        : typeof mass == "number"
-            ? new Array(p.length).fill(mass)
-            : new Array(p.length).fill(1);
+        : new Array(p.length).fill(mass);
     if (_mass.includes(0))
         throw new RangeError("Mass cannot be zero.");
+    var _charge = Array.isArray(charge)
+        ? charge
+        : new Array(p.length).fill(charge);
     var N = points.length;
     // Calculate forces
-    var pf = p.map(function (pt) { return pointForces(pt, p); });
+    var pf = p.map(function (pt, i) { return pointForces(pt, _charge[i], p, _charge); });
     var bf = p.map(function (pt) { return polygonForces(pt, poly, parallelForces); });
     // Update momentum
     m = m.map(function (mt, i) {
@@ -145,18 +148,20 @@ export function movePoints(_a) {
  * @private
  *
  * @param {Array} pt The point to measure forces
+ * @param {number} c The point charge
  * @param {Array} points The points acting on pt
+ * @param {Array} charge Array of other points charges
  * @return {Array} force Sum of forces acting on pt
  */
-export function pointForces(pt, points) {
-    return points.reduce(function (acc, pt0) {
+export function pointForces(pt, c, points, charge) {
+    return points.reduce(function (acc, pt0, i) {
         var vdx = pt[0] - pt0[0];
         var vdy = pt[1] - pt0[1];
         var norm2 = Math.pow(vdx, 2) + Math.pow(vdy, 2);
         norm2 = norm2 != 0 ? norm2 : Infinity;
         var norm = Math.sqrt(norm2);
-        var fx = vdx / norm / norm2;
-        var fy = vdy / norm / norm2;
+        var fx = (c * charge[i] * vdx) / norm / norm2;
+        var fy = (c * charge[i] * vdy) / norm / norm2;
         return [acc[0] + fx, acc[1] + fy];
     }, [0, 0]);
 }
@@ -347,6 +352,7 @@ export function randomInGeoPolygon(N, geoPolygon) {
  *      iteration (optional). Callback args: points, momentum, polygon,
  *      baseForce, currentDrag, viscosity, maxMomentum
  * @param {Number[] | Number=} config.mass - Mass or masses of the points.
+ * @param {Number[] | Number=} config.charge - Charge or charges of the points.
  * @param {Number=} config.baseForce - The force constant
  * @param {Number=} config.drag - The drag coeficient
  * @param {Number=} config.viscosity - The viscosity coeficient
@@ -361,7 +367,7 @@ export function randomInGeoPolygon(N, geoPolygon) {
  */
 export function relaxPoints(_a) {
     var _b;
-    var points = _a.points, momentum = _a.momentum, polygon = _a.polygon, iterations = _a.iterations, callback = _a.callback, _c = _a.mass, mass = _c === void 0 ? DEFAULTMASS : _c, _d = _a.baseForce, baseForce = _d === void 0 ? BASEFORCE : _d, _e = _a.drag, drag = _e === void 0 ? DRAG : _e, _f = _a.viscosity, viscosity = _f === void 0 ? VISCOSITY : _f, _g = _a.maxMomentum, maxMomentum = _g === void 0 ? MAXMOMENTUM : _g, _h = _a.parallelForces, parallelForces = _h === void 0 ? PARALLELFORCES : _h, _j = _a.wallForces, wallForces = _j === void 0 ? WALLFORCES : _j, _k = _a.simplifyPolygon, simplifyPolygon = _k === void 0 ? SIMPLIFYPOLYGON : _k, _l = _a.attenuation, attenuation = _l === void 0 ? ATTENUATION : _l;
+    var points = _a.points, momentum = _a.momentum, polygon = _a.polygon, iterations = _a.iterations, callback = _a.callback, _c = _a.mass, mass = _c === void 0 ? DEFAULTMASS : _c, _d = _a.charge, charge = _d === void 0 ? DEFAULTCHARGE : _d, _e = _a.baseForce, baseForce = _e === void 0 ? BASEFORCE : _e, _f = _a.drag, drag = _f === void 0 ? DRAG : _f, _g = _a.viscosity, viscosity = _g === void 0 ? VISCOSITY : _g, _h = _a.maxMomentum, maxMomentum = _h === void 0 ? MAXMOMENTUM : _h, _j = _a.parallelForces, parallelForces = _j === void 0 ? PARALLELFORCES : _j, _k = _a.wallForces, wallForces = _k === void 0 ? WALLFORCES : _k, _l = _a.simplifyPolygon, simplifyPolygon = _l === void 0 ? SIMPLIFYPOLYGON : _l, _m = _a.attenuation, attenuation = _m === void 0 ? ATTENUATION : _m;
     var p = __spreadArray([], points);
     var m = ((momentum == undefined ? p.map(function () { return [0, 0]; }) : __spreadArray([], momentum)));
     var att = 1 + attenuation;
@@ -399,6 +405,7 @@ export function relaxPoints(_a) {
  *      iteration (optional). Callback args: points, momentum, polygon,
  *      baseForce, currentDrag, viscosity, maxMomentum
  * @param {Number[] | Number=} config.mass - Mass or masses of the points.
+ * @param {Number[] | Number=} config.charge - Charge or charges of the points.
  * @param {Number=} config.baseForce - The force constant
  * @param {Number=} config.drag - The drag coeficient
  * @param {Number=} config.viscosity - The viscosity coeficient
@@ -412,7 +419,7 @@ export function relaxPoints(_a) {
  * @return {Array} points Last iteration points positions
  */
 export function relaxNPoints(_a) {
-    var N = _a.N, polygon = _a.polygon, iterations = _a.iterations, callback = _a.callback, _b = _a.mass, mass = _b === void 0 ? DEFAULTMASS : _b, _c = _a.baseForce, baseForce = _c === void 0 ? BASEFORCE : _c, _d = _a.drag, drag = _d === void 0 ? DRAG : _d, _e = _a.viscosity, viscosity = _e === void 0 ? VISCOSITY : _e, _f = _a.maxMomentum, maxMomentum = _f === void 0 ? MAXMOMENTUM : _f, _g = _a.parallelForces, parallelForces = _g === void 0 ? PARALLELFORCES : _g, _h = _a.wallForces, wallForces = _h === void 0 ? WALLFORCES : _h, _j = _a.simplifyPolygon, simplifyPolygon = _j === void 0 ? SIMPLIFYPOLYGON : _j, _k = _a.attenuation, attenuation = _k === void 0 ? ATTENUATION : _k;
+    var N = _a.N, polygon = _a.polygon, iterations = _a.iterations, callback = _a.callback, _b = _a.mass, mass = _b === void 0 ? DEFAULTMASS : _b, _c = _a.charge, charge = _c === void 0 ? DEFAULTCHARGE : _c, _d = _a.baseForce, baseForce = _d === void 0 ? BASEFORCE : _d, _e = _a.drag, drag = _e === void 0 ? DRAG : _e, _f = _a.viscosity, viscosity = _f === void 0 ? VISCOSITY : _f, _g = _a.maxMomentum, maxMomentum = _g === void 0 ? MAXMOMENTUM : _g, _h = _a.parallelForces, parallelForces = _h === void 0 ? PARALLELFORCES : _h, _j = _a.wallForces, wallForces = _j === void 0 ? WALLFORCES : _j, _k = _a.simplifyPolygon, simplifyPolygon = _k === void 0 ? SIMPLIFYPOLYGON : _k, _l = _a.attenuation, attenuation = _l === void 0 ? ATTENUATION : _l;
     var points = randomInPolygon(N, polygon);
     var momentum = points.map(function () { return [0, 0]; });
     return relaxPoints({
@@ -445,6 +452,7 @@ export function relaxNPoints(_a) {
  *      iteration. Callback args: points, momentum, polygon, baseForce,
  *      currentDrag, viscosity, maxMomentum
  * @param {Number[] | Number=} config.mass - Mass or masses of the points.
+ * @param {Number[] | Number=} config.charge - Charge or charges of the points.
  * @param {Number=} config.baseForce - The force constant
  * @param {Number=} config.drag - The drag coeficient
  * @param {Number=} config.viscosity - The viscosity coeficient
@@ -459,8 +467,8 @@ export function relaxNPoints(_a) {
  *      points positions
  */
 export function relaxGeoPoints(_a) {
-    var geoPoints = _a.geoPoints, geoPolygon = _a.geoPolygon, width = _a.width, iterations = _a.iterations, callback = _a.callback, _b = _a.mass, mass = _b === void 0 ? DEFAULTMASS : _b, _c = _a.baseForce, baseForce = _c === void 0 ? BASEFORCE : _c, _d = _a.drag, drag = _d === void 0 ? DRAG : _d, _e = _a.viscosity, viscosity = _e === void 0 ? VISCOSITY : _e, _f = _a.maxMomentum, maxMomentum = _f === void 0 ? MAXMOMENTUM : _f, _g = _a.parallelForces, parallelForces = _g === void 0 ? PARALLELFORCES : _g, _h = _a.wallForces, wallForces = _h === void 0 ? WALLFORCES : _h, _j = _a.simplifyPolygon, simplifyPolygon = _j === void 0 ? SIMPLIFYPOLYGON : _j, _k = _a.attenuation, attenuation = _k === void 0 ? ATTENUATION : _k;
-    var _l = buildPolygon(geoPolygon, width), polygon = _l.polygon, minLat = _l.minLat, minLng = _l.minLng, delta = _l.delta;
+    var geoPoints = _a.geoPoints, geoPolygon = _a.geoPolygon, width = _a.width, iterations = _a.iterations, callback = _a.callback, _b = _a.mass, mass = _b === void 0 ? DEFAULTMASS : _b, _c = _a.charge, charge = _c === void 0 ? DEFAULTCHARGE : _c, _d = _a.baseForce, baseForce = _d === void 0 ? BASEFORCE : _d, _e = _a.drag, drag = _e === void 0 ? DRAG : _e, _f = _a.viscosity, viscosity = _f === void 0 ? VISCOSITY : _f, _g = _a.maxMomentum, maxMomentum = _g === void 0 ? MAXMOMENTUM : _g, _h = _a.parallelForces, parallelForces = _h === void 0 ? PARALLELFORCES : _h, _j = _a.wallForces, wallForces = _j === void 0 ? WALLFORCES : _j, _k = _a.simplifyPolygon, simplifyPolygon = _k === void 0 ? SIMPLIFYPOLYGON : _k, _l = _a.attenuation, attenuation = _l === void 0 ? ATTENUATION : _l;
+    var _m = buildPolygon(geoPolygon, width), polygon = _m.polygon, minLat = _m.minLat, minLng = _m.minLng, delta = _m.delta;
     var momentum = geoPoints.map(function () { return [0, 0]; });
     var points = relaxPoints({
         points: (geoPoints.map(function (p) { return [(p.lat - minLat) * delta, (p.lng - minLng) * delta]; })),
@@ -499,6 +507,7 @@ export function relaxGeoPoints(_a) {
  *      iteration. Callback args: points, momentum, polygon, baseForce,
  *      currentDrag, viscosity, maxMomentum
  * @param {Number[] | Number=} config.mass - Mass or masses of the points.
+ * @param {Number[] | Number=} config.charge - Charge or charges of the points.
  * @param {Number=} config.baseForce - The force constant
  * @param {Number=} config.drag - The drag coeficient
  * @param {Number=} config.viscosity - The viscosity coeficient
@@ -513,7 +522,7 @@ export function relaxGeoPoints(_a) {
  *      points positions
  */
 export function relaxNGeoPoints(_a) {
-    var N = _a.N, geoPolygon = _a.geoPolygon, width = _a.width, iterations = _a.iterations, callback = _a.callback, _b = _a.mass, mass = _b === void 0 ? DEFAULTMASS : _b, _c = _a.baseForce, baseForce = _c === void 0 ? BASEFORCE : _c, _d = _a.drag, drag = _d === void 0 ? DRAG : _d, _e = _a.viscosity, viscosity = _e === void 0 ? VISCOSITY : _e, _f = _a.maxMomentum, maxMomentum = _f === void 0 ? MAXMOMENTUM : _f, _g = _a.parallelForces, parallelForces = _g === void 0 ? PARALLELFORCES : _g, _h = _a.wallForces, wallForces = _h === void 0 ? WALLFORCES : _h, _j = _a.simplifyPolygon, simplifyPolygon = _j === void 0 ? SIMPLIFYPOLYGON : _j, _k = _a.attenuation, attenuation = _k === void 0 ? ATTENUATION : _k;
+    var N = _a.N, geoPolygon = _a.geoPolygon, width = _a.width, iterations = _a.iterations, callback = _a.callback, _b = _a.mass, mass = _b === void 0 ? DEFAULTMASS : _b, _c = _a.charge, charge = _c === void 0 ? DEFAULTCHARGE : _c, _d = _a.baseForce, baseForce = _d === void 0 ? BASEFORCE : _d, _e = _a.drag, drag = _e === void 0 ? DRAG : _e, _f = _a.viscosity, viscosity = _f === void 0 ? VISCOSITY : _f, _g = _a.maxMomentum, maxMomentum = _g === void 0 ? MAXMOMENTUM : _g, _h = _a.parallelForces, parallelForces = _h === void 0 ? PARALLELFORCES : _h, _j = _a.wallForces, wallForces = _j === void 0 ? WALLFORCES : _j, _k = _a.simplifyPolygon, simplifyPolygon = _k === void 0 ? SIMPLIFYPOLYGON : _k, _l = _a.attenuation, attenuation = _l === void 0 ? ATTENUATION : _l;
     var geoPoints = randomInGeoPolygon(N, geoPolygon);
     return relaxGeoPoints({
         geoPoints: geoPoints,
@@ -559,77 +568,4 @@ export function buildPolygon(geoPolygon, width) {
         polygon.push(polygon[0]);
     }
     return { polygon: polygon, minLat: minLat, minLng: minLng, delta: delta };
-}
-/**
- * Plots a polygon in the canvas
- *
- * @param {Object} ctx Canvas context
- * @param {Array} polygon Set of points that describes the polygon
- * @param {String} color Points color
- */
-export function drawPolygon(ctx, polygon, color) {
-    if (color === void 0) { color = "black"; }
-    ctx.strokestyle = color;
-    var pt0 = polygon[0];
-    ctx.beginPath();
-    ctx.moveTo(pt0[0], pt0[1]);
-    polygon.slice(1).forEach(function (pt) {
-        ctx.lineTo(pt[0], pt[1]);
-    });
-    ctx.closePath();
-    ctx.stroke();
-}
-/**
- * Plots points in the canvas
- *
- * @param {Object} ctx Canvas context
- * @param {Array} polygon Set of points that describes the polygon
- * @param {Number} radius points radius
- * @param {String} color Points color
- */
-export function drawPoints(ctx, points, radius, color) {
-    if (radius === void 0) { radius = 6; }
-    if (color === void 0) { color = "black"; }
-    ctx.fillStyle = color;
-    points.forEach(function (pt) {
-        ctx.beginPath();
-        ctx.arc(pt[0], pt[1], radius, 0, 2 * Math.PI, 0);
-        ctx.fill();
-    });
-}
-/**
- * Clears the canvas and sets a background color
- *
- * @param {Object} canvas Canvas object
- * @param {String} backgroundColor Points color
- */
-export function resetCanvas(canvas, backgroundColor) {
-    if (backgroundColor === void 0) { backgroundColor = "white"; }
-    var ctx = canvas.getContext("2d");
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = backgroundColor;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-}
-/**
- * Plots the points and polygon into a blank canvas
- *
- * @param {Object} canvas Canvas object
- * @param {Array} polygon Set of points that describes the polygon
- * @param {Number} radius points radius
- * @param {String} color Points color
- * @param {String} backgroundColor Points color
- */
-export function drawPolygonAndPoints(canvas, points, polygon, radius, color, backgroundColor) {
-    if (radius === void 0) { radius = 6; }
-    if (color === void 0) { color = "black"; }
-    if (backgroundColor === void 0) { backgroundColor = "white"; }
-    var ctx = canvas.getContext("2d");
-    var _a = polygon.reduce(function (acc, v) {
-        acc.width = acc.width < v[0] ? v[0] : acc.width;
-        acc.height = acc.height < v[1] ? v[1] : acc.height;
-        return acc;
-    }, { width: 0, height: 0 }), width = _a.width, height = _a.height;
-    resetCanvas(canvas, backgroundColor);
-    drawPoints(ctx, points, radius, color);
-    drawPolygon(ctx, polygon, color);
 }

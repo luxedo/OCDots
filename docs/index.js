@@ -1,4 +1,5 @@
 import * as ocdots from "./ocdots.js";
+import { drawPolygonAndPoints } from "./draw.js";
 
 document.addEventListener("DOMContentLoaded", function () {
   const size = 500;
@@ -127,6 +128,10 @@ document.addEventListener("DOMContentLoaded", function () {
   const DEFAULTN = 21;
 
   let N,
+    mass,
+    randomMasses,
+    charge,
+    randomCharges,
     baseForce,
     drag,
     viscosity,
@@ -139,11 +144,13 @@ document.addEventListener("DOMContentLoaded", function () {
     polygon;
 
   function draw() {
-    ocdots.drawPolygonAndPoints(canvas, points, polygon);
+    drawPolygonAndPoints(canvas, points, polygon, mass, charge);
     [points, momentum] = ocdots.movePoints({
       points,
       momentum,
       polygon,
+      mass,
+      charge,
       baseForce,
       drag,
       viscosity,
@@ -204,6 +211,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
   window.resetControls = () => {
     N = DEFAULTN;
+    mass = ocdots.DEFAULTMASS;
+    charge = ocdots.DEFAULTCHARGE;
     baseForce = ocdots.BASEFORCE;
     drag = ocdots.DRAG;
     viscosity = ocdots.VISCOSITY;
@@ -211,6 +220,8 @@ document.addEventListener("DOMContentLoaded", function () {
     maxMomentum = ocdots.MAXMOMENTUM;
     parallelForces = ocdots.PARALLELFORCES;
     wallForces = ocdots.WALLFORCES;
+    randomMasses = false;
+    randomCharges = false;
     polygon = polygons[Math.floor(Math.random() * polygons.length)];
     window.resetPoints();
     document.getElementById("baseForce").value = baseForce;
@@ -219,6 +230,8 @@ document.addEventListener("DOMContentLoaded", function () {
     document.getElementById("maxMomentum").value = maxMomentum;
     document.getElementById("N").value = N;
     document.getElementById("parallelForces").checked = parallelForces;
+    document.getElementById("randomMasses").checked = randomMasses;
+    document.getElementById("randomCharges").checked = randomCharges;
     document.getElementById("wallForces").value = wallForces;
     updateRange();
   };
@@ -234,6 +247,26 @@ document.addEventListener("DOMContentLoaded", function () {
     N = event.srcElement.value;
     window.resetPoints();
   });
+
+  document
+    .getElementById("randomMasses")
+    .addEventListener("change", (event) => {
+      if (event.target.checked)
+        mass = new Array(points.length)
+          .fill(0)
+          .map(() => 0.01 + 2 * Math.random());
+      else mass = ocdots.DEFAULTMASS;
+    });
+
+  document
+    .getElementById("randomCharges")
+    .addEventListener("change", (event) => {
+      if (event.target.checked)
+        charge = new Array(points.length)
+          .fill(0)
+          .map(() => 2 * Math.random()-1);
+      else charge = ocdots.DEFAULTMASS;
+    });
 
   window.resetControls();
   draw();

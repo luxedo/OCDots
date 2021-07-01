@@ -21,6 +21,7 @@ import { simplify } from "./simplify.js";
 
 // Default values
 export const DEFAULTMASS = 1;
+export const DEFAULTCHARGE = 1;
 export const BASEFORCE = 5;
 export const DRAG = 0.1;
 export const VISCOSITY = 0.1;
@@ -65,6 +66,7 @@ type PolygonArray<T> = {
  *      or anticlockwise) and closed i.e. first points equals the last
  *      point.
  * @param {Number[] | Number=} config.mass - Mass or masses of the points.
+ * @param {Number[] | Number=} config.charge - Charge or charges of the points.
  * @param {Number=} config.baseForce - The force constant
  * @param {Number=} config.drag - The drag coeficient
  * @param {Number=} config.viscosity - The viscosity coeficient
@@ -81,6 +83,7 @@ export function movePoints({
   momentum,
   polygon,
   mass = DEFAULTMASS,
+  charge = DEFAULTCHARGE,
   baseForce = BASEFORCE,
   drag = DRAG,
   viscosity = VISCOSITY,
@@ -93,6 +96,7 @@ export function movePoints({
   momentum: VecArray<vec>;
   polygon: PolygonArray<vec>;
   mass?: number[] | number;
+  charge?: number[] | number;
   baseForce?: number;
   drag?: number;
   viscosity?: number;
@@ -137,14 +141,16 @@ export function movePoints({
   let m = <VecArray<vec>>[...momentum];
   const _mass: number[] = Array.isArray(mass)
     ? mass
-    : typeof mass == "number"
-    ? new Array(p.length).fill(mass)
-    : new Array(p.length).fill(1);
+    : new Array(p.length).fill(mass);
   if (_mass.includes(0)) throw new RangeError("Mass cannot be zero.");
+  const _charge: number[] = Array.isArray(charge)
+    ? charge
+    : new Array(p.length).fill(charge);
+
   const N = points.length;
 
   // Calculate forces
-  const pf = p.map((pt) => pointForces(pt, p));
+  const pf = p.map((pt, i) => pointForces(pt, _charge[i], p, _charge));
   const bf = p.map((pt) => polygonForces(pt, poly, parallelForces));
 
   // Update momentum
@@ -185,19 +191,26 @@ export function movePoints({
  * @private
  *
  * @param {Array} pt The point to measure forces
+ * @param {number} c The point charge
  * @param {Array} points The points acting on pt
+ * @param {Array} charge Array of other points charges
  * @return {Array} force Sum of forces acting on pt
  */
-export function pointForces(pt: vec, points: VecArray<vec>): vec {
+export function pointForces(
+  pt: vec,
+  c: number,
+  points: VecArray<vec>,
+  charge: number[]
+): vec {
   return points.reduce(
-    (acc, pt0) => {
+    (acc, pt0, i) => {
       const vdx = pt[0] - pt0[0];
       const vdy = pt[1] - pt0[1];
       let norm2 = Math.pow(vdx, 2) + Math.pow(vdy, 2);
       norm2 = norm2 != 0 ? norm2 : Infinity;
       const norm = Math.sqrt(norm2);
-      const fx = vdx / norm / norm2;
-      const fy = vdy / norm / norm2;
+      const fx = (c * charge[i] * vdx) / norm / norm2;
+      const fy = (c * charge[i] * vdy) / norm / norm2;
       return [acc[0] + fx, acc[1] + fy];
     },
     [0, 0]
@@ -430,6 +443,7 @@ export function randomInGeoPolygon(
  *      iteration (optional). Callback args: points, momentum, polygon,
  *      baseForce, currentDrag, viscosity, maxMomentum
  * @param {Number[] | Number=} config.mass - Mass or masses of the points.
+ * @param {Number[] | Number=} config.charge - Charge or charges of the points.
  * @param {Number=} config.baseForce - The force constant
  * @param {Number=} config.drag - The drag coeficient
  * @param {Number=} config.viscosity - The viscosity coeficient
@@ -449,6 +463,7 @@ export function relaxPoints({
   iterations,
   callback,
   mass = DEFAULTMASS,
+  charge = DEFAULTCHARGE,
   baseForce = BASEFORCE,
   drag = DRAG,
   viscosity = VISCOSITY,
@@ -464,6 +479,7 @@ export function relaxPoints({
   iterations: number;
   callback?: Function;
   mass?: number[] | number;
+  charge?: number[] | number;
   baseForce?: number;
   drag?: number;
   viscosity?: number;
@@ -522,6 +538,7 @@ export function relaxPoints({
  *      iteration (optional). Callback args: points, momentum, polygon,
  *      baseForce, currentDrag, viscosity, maxMomentum
  * @param {Number[] | Number=} config.mass - Mass or masses of the points.
+ * @param {Number[] | Number=} config.charge - Charge or charges of the points.
  * @param {Number=} config.baseForce - The force constant
  * @param {Number=} config.drag - The drag coeficient
  * @param {Number=} config.viscosity - The viscosity coeficient
@@ -541,6 +558,7 @@ export function relaxNPoints({
   iterations,
   callback,
   mass = DEFAULTMASS,
+  charge = DEFAULTCHARGE,
   baseForce = BASEFORCE,
   drag = DRAG,
   viscosity = VISCOSITY,
@@ -555,6 +573,7 @@ export function relaxNPoints({
   iterations: number;
   callback?: Function;
   mass?: number[] | number;
+  charge?: number[] | number;
   baseForce?: number;
   drag?: number;
   viscosity?: number;
@@ -597,6 +616,7 @@ export function relaxNPoints({
  *      iteration. Callback args: points, momentum, polygon, baseForce,
  *      currentDrag, viscosity, maxMomentum
  * @param {Number[] | Number=} config.mass - Mass or masses of the points.
+ * @param {Number[] | Number=} config.charge - Charge or charges of the points.
  * @param {Number=} config.baseForce - The force constant
  * @param {Number=} config.drag - The drag coeficient
  * @param {Number=} config.viscosity - The viscosity coeficient
@@ -617,6 +637,7 @@ export function relaxGeoPoints({
   iterations,
   callback,
   mass = DEFAULTMASS,
+  charge = DEFAULTCHARGE,
   baseForce = BASEFORCE,
   drag = DRAG,
   viscosity = VISCOSITY,
@@ -632,6 +653,7 @@ export function relaxGeoPoints({
   iterations: number;
   callback?: Function;
   mass?: number[] | number;
+  charge?: number[] | number;
   baseForce?: number;
   drag?: number;
   viscosity?: number;
@@ -686,6 +708,7 @@ export function relaxGeoPoints({
  *      iteration. Callback args: points, momentum, polygon, baseForce,
  *      currentDrag, viscosity, maxMomentum
  * @param {Number[] | Number=} config.mass - Mass or masses of the points.
+ * @param {Number[] | Number=} config.charge - Charge or charges of the points.
  * @param {Number=} config.baseForce - The force constant
  * @param {Number=} config.drag - The drag coeficient
  * @param {Number=} config.viscosity - The viscosity coeficient
@@ -706,6 +729,7 @@ export function relaxNGeoPoints({
   iterations,
   callback,
   mass = DEFAULTMASS,
+  charge = DEFAULTCHARGE,
   baseForce = BASEFORCE,
   drag = DRAG,
   viscosity = VISCOSITY,
@@ -721,6 +745,7 @@ export function relaxNGeoPoints({
   iterations: number;
   callback?: Function;
   mass?: number[] | number;
+  charge?: number[] | number;
   baseForce?: number;
   drag?: number;
   viscosity?: number;
@@ -793,84 +818,4 @@ export function buildPolygon(
     polygon.push(polygon[0]);
   }
   return { polygon, minLat, minLng, delta };
-}
-
-/**
- * Plots a polygon in the canvas
- *
- * @param {Object} ctx Canvas context
- * @param {Array} polygon Set of points that describes the polygon
- * @param {String} color Points color
- */
-export function drawPolygon(ctx, polygon, color = "black") {
-  ctx.strokestyle = color;
-  const pt0 = polygon[0];
-  ctx.beginPath();
-  ctx.moveTo(pt0[0], pt0[1]);
-  polygon.slice(1).forEach((pt) => {
-    ctx.lineTo(pt[0], pt[1]);
-  });
-  ctx.closePath();
-  ctx.stroke();
-}
-
-/**
- * Plots points in the canvas
- *
- * @param {Object} ctx Canvas context
- * @param {Array} polygon Set of points that describes the polygon
- * @param {Number} radius points radius
- * @param {String} color Points color
- */
-export function drawPoints(ctx, points, radius = 6, color = "black") {
-  ctx.fillStyle = color;
-  points.forEach((pt) => {
-    ctx.beginPath();
-    ctx.arc(pt[0], pt[1], radius, 0, 2 * Math.PI, 0);
-    ctx.fill();
-  });
-}
-
-/**
- * Clears the canvas and sets a background color
- *
- * @param {Object} canvas Canvas object
- * @param {String} backgroundColor Points color
- */
-export function resetCanvas(canvas, backgroundColor = "white") {
-  const ctx = canvas.getContext("2d");
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = backgroundColor;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-}
-
-/**
- * Plots the points and polygon into a blank canvas
- *
- * @param {Object} canvas Canvas object
- * @param {Array} polygon Set of points that describes the polygon
- * @param {Number} radius points radius
- * @param {String} color Points color
- * @param {String} backgroundColor Points color
- */
-export function drawPolygonAndPoints(
-  canvas,
-  points,
-  polygon,
-  radius = 6,
-  color = "black",
-  backgroundColor = "white"
-) {
-  const ctx = canvas.getContext("2d");
-  const { width, height } = polygon.reduce(
-    (acc, v) => {
-      acc.width = acc.width < v[0] ? v[0] : acc.width;
-      acc.height = acc.height < v[1] ? v[1] : acc.height;
-      return acc;
-    },
-    { width: 0, height: 0 }
-  );
-  resetCanvas(canvas, backgroundColor);
-  drawPoints(ctx, points, radius, color);
-  drawPolygon(ctx, polygon, color);
 }

@@ -28,7 +28,6 @@
   "author": "Luiz Eduardo Amaral",
   "license": "GPL-3.0-or-later",
   "devDependencies": {
-    "canvas": "^2.6.1",
     "chai": "^4.2.0",
     "husky": "^4.3.0",
     "jest": "^26.4.2",
