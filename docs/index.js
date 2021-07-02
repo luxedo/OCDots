@@ -207,7 +207,23 @@ document.addEventListener("DOMContentLoaded", function () {
   window.resetPoints = () => {
     points = ocdots.randomInPolygon(N, polygon);
     momentum = points.map(() => [0, 0]);
+    window.setMasses(randomMasses)
+    window.setCharges(randomCharges)
   };
+
+  window.setMasses = (random) => {
+    if (random)
+      mass = points.map(() => 0.01 + 3 * Math.random());
+    else
+      mass = ocdots.DEFAULTMASS;
+  }
+
+  window.setCharges = (random) => {
+    if (random)
+      charge = points.map(() => 3 * Math.random() - 1.5);
+    else
+      charge = ocdots.DEFAULTMASS;
+  }
 
   window.resetControls = () => {
     N = DEFAULTN;
@@ -251,21 +267,15 @@ document.addEventListener("DOMContentLoaded", function () {
   document
     .getElementById("randomMasses")
     .addEventListener("change", (event) => {
-      if (event.target.checked)
-        mass = new Array(points.length)
-          .fill(0)
-          .map(() => 0.01 + 2 * Math.random());
-      else mass = ocdots.DEFAULTMASS;
+      randomMasses = event.target.checked;
+      window.setMasses(randomMasses);
     });
 
   document
     .getElementById("randomCharges")
     .addEventListener("change", (event) => {
-      if (event.target.checked)
-        charge = new Array(points.length)
-          .fill(0)
-          .map(() => 2 * Math.random()-1);
-      else charge = ocdots.DEFAULTMASS;
+      randomCharges = event.target.checked;
+      window.setCharges(randomCharges);
     });
 
   window.resetControls();

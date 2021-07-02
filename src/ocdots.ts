@@ -146,32 +146,41 @@ export function movePoints({
   const _charge: number[] = Array.isArray(charge)
     ? charge
     : new Array(p.length).fill(charge);
-
   const N = points.length;
 
-  // Calculate forces
-  const pf = p.map((pt, i) => pointForces(pt, _charge[i], p, _charge));
-  const bf = p.map((pt) => polygonForces(pt, poly, parallelForces));
-
-  // Update momentum
-  m = <VecArray<vec>>m.map((mt, i) => {
+  for (let i = 0; i < p.length; i++) {
+    // Calculate forces
+    const pt = points[i];
+    const pf = pointForces(pt, _charge[i], points, _charge);
+    const bf = polygonForces(pt, poly, parallelForces);
     const force: vec = [
-      Math.pow(10, baseForce) * (pf[i][0] + (wallForces * N * bf[i][0]) / S),
-      Math.pow(10, baseForce) * (pf[i][1] + (wallForces * N * bf[i][1]) / S),
+      Math.pow(10, baseForce) * (pf[0] + (wallForces * N * bf[0]) / S),
+      Math.pow(10, baseForce) * (pf[1] + (wallForces * N * bf[1]) / S),
       // Polygon forces are normalized to it's total length and
       // multiplied by wallForces
     ];
-    return updateMomentum(mt, force, _mass[i], drag, viscosity, maxMomentum);
-  });
 
-  // Update position
-  p = <VecArray<vec>>p.map((pt, i) => {
+    // Update momentum
+    const mx = force[0] / _mass[i] + m[i][0];
+    const my = force[1] / _mass[i] + m[i][1];
+    const norm = Math.sqrt(Math.pow(mx, 2) + Math.pow(my, 2));
+    let mf = norm * (1 - drag);
+    mf =
+      mf < maxMomentum
+        ? mf
+        : maxMomentum *
+          (Math.exp(-viscosity * (mf - maxMomentum)) * viscosity +
+            (1 - viscosity));
+    m[i] = [(mf * mx) / norm, (mf * my) / norm];
+
+    // Update position
     for (let j = 0; j < 10; j++) {
       // We move points as close to the polygon as possible
       const px = pt[0] + m[i][0];
       const py = pt[1] + m[i][1];
       if (checkInbounds([px, py], poly)) {
-        return [px, py];
+        p[i] = [px, py];
+        break;
       }
       // Lose momentum if colliding into the walls
       m[i][0] /= i + 2;
@@ -181,8 +190,8 @@ export function movePoints({
         m[i][1] = 0;
       }
     }
-    return pt;
-  });
+  }
+
   return [<VecArray<vec>>p, <VecArray<vec>>m];
 }
 
@@ -202,19 +211,17 @@ export function pointForces(
   points: VecArray<vec>,
   charge: number[]
 ): vec {
-  return points.reduce(
-    (acc, pt0, i) => {
-      const vdx = pt[0] - pt0[0];
-      const vdy = pt[1] - pt0[1];
-      let norm2 = Math.pow(vdx, 2) + Math.pow(vdy, 2);
-      norm2 = norm2 != 0 ? norm2 : Infinity;
-      const norm = Math.sqrt(norm2);
-      const fx = (c * charge[i] * vdx) / norm / norm2;
-      const fy = (c * charge[i] * vdy) / norm / norm2;
-      return [acc[0] + fx, acc[1] + fy];
-    },
-    [0, 0]
-  );
+  const f: vec = [0, 0];
+  for (let i = 0; i < points.length; i++) {
+    const vdx = pt[0] - points[i][0];
+    const vdy = pt[1] - points[i][1];
+    let norm2 = Math.pow(vdx, 2) + Math.pow(vdy, 2);
+    norm2 = norm2 != 0 ? norm2 : Infinity;
+    const norm = Math.sqrt(norm2);
+    f[0] += (c * charge[i] * vdx) / norm / norm2;
+    f[1] += (c * charge[i] * vdy) / norm / norm2;
+  }
+  return f;
 }
 
 /**
@@ -239,40 +246,40 @@ export function polygonForces(
   polygon: PolygonArray<vec>,
   parallelForces: boolean = PARALLELFORCES
 ): vec {
-  return polygon.slice(1).reduce(
-    (acc, v2, i1) => {
-      const v1 = polygon[i1];
+  const f: vec = [0, 0];
+  for (let i = 1; i < polygon.length; i++) {
+    const v1 = polygon[i - 1];
+    const v2 = polygon[i];
 
-      const t = perpendicularToLine(pt, v1, v2);
-      const p = [-t[1], t[0]];
-      const nt = Math.sqrt(Math.pow(t[0], 2) + Math.pow(t[1], 2));
+    const t = perpendicularToLine(pt, v1, v2);
+    const p = [-t[1], t[0]];
+    const nt = Math.sqrt(Math.pow(t[0], 2) + Math.pow(t[1], 2));
 
-      const v1pt = [pt[0] - v1[0], pt[1] - v1[1]];
-      const v2pt = [pt[0] - v2[0], pt[1] - v2[1]];
-      const thetaA = Math.atan2(v1pt[1], v1pt[0]) - Math.atan2(t[1], t[0]);
-      const thetaB = Math.atan2(v2pt[1], v2pt[0]) - Math.atan2(t[1], t[0]);
-      // Align thetaDiff between -PI and +PI
-      let thetaDiff = thetaB - thetaA;
-      thetaDiff = thetaDiff <= Math.PI ? thetaDiff + 2 * Math.PI : thetaDiff;
-      thetaDiff = thetaDiff > Math.PI ? thetaDiff - 2 * Math.PI : thetaDiff;
+    const v1pt = [pt[0] - v1[0], pt[1] - v1[1]];
+    const v2pt = [pt[0] - v2[0], pt[1] - v2[1]];
+    const thetaA = Math.atan2(v1pt[1], v1pt[0]) - Math.atan2(t[1], t[0]);
+    const thetaB = Math.atan2(v2pt[1], v2pt[0]) - Math.atan2(t[1], t[0]);
+    // Align thetaDiff between -PI and +PI
+    let thetaDiff = thetaB - thetaA;
+    thetaDiff = thetaDiff <= Math.PI ? thetaDiff + 2 * Math.PI : thetaDiff;
+    thetaDiff = thetaDiff > Math.PI ? thetaDiff - 2 * Math.PI : thetaDiff;
 
-      const modulus = (1 / nt) * Math.sin((1 / 2) * thetaDiff);
+    const modulus = (1 / nt) * Math.sin((1 / 2) * thetaDiff);
 
-      const tv = Math.sin(thetaB) - Math.sin(thetaA); // Perpendicular fraction
-      const pv = -(Math.cos(thetaB) - Math.cos(thetaA)); // Parallel fraction
-      const dn = Math.sqrt(Math.pow(pv, 2) + Math.pow(tv, 2));
+    const tv = Math.sin(thetaB) - Math.sin(thetaA); // Perpendicular fraction
+    const pv = -(Math.cos(thetaB) - Math.cos(thetaA)); // Parallel fraction
+    const dn = Math.sqrt(Math.pow(pv, 2) + Math.pow(tv, 2));
 
-      const direction = parallelForces
-        ? [
-            (tv * t[0]) / nt / dn + (pv * p[0]) / nt / dn,
-            (tv * t[1]) / nt / dn + (pv * p[1]) / nt / dn,
-          ]
-        : [(tv * t[0]) / nt / dn, (tv * t[1]) / nt / dn];
-      const f = [modulus * direction[0], modulus * direction[1]];
-      return [acc[0] + f[0], acc[1] + f[1]];
-    },
-    [0, 0]
-  );
+    const direction = parallelForces
+      ? [
+          (tv * t[0]) / nt / dn + (pv * p[0]) / nt / dn,
+          (tv * t[1]) / nt / dn + (pv * p[1]) / nt / dn,
+        ]
+      : [(tv * t[0]) / nt / dn, (tv * t[1]) / nt / dn];
+    f[0] += modulus * direction[0];
+    f[1] += modulus * direction[1];
+  }
+  return f;
 }
 
 /**
@@ -291,39 +298,6 @@ export function perpendicularToLine(pt: vec, v1: vec, v2: vec): vec {
   const n = [v1v2[0] / nv1v2, v1v2[1] / nv1v2];
   const d = v1p[0] * n[0] + v1p[1] * n[1];
   return [v1p[0] - d * n[0], v1p[1] - d * n[1]];
-}
-
-/**
- * Updates the momentum.
- * @private
- *
- * @param {Array} mt Initial momentum
- * @param {Array} force Forcing acting at the point
- * @param {Number} mass Point mass
- * @param {Number} drag The drag coeficient
- * @param {Number} viscosity The viscosity coeficient
- * @param {Number} maxMomentum Maximum momentum for each point
- * @return {Array} mu Updated momentum
- */
-export function updateMomentum(
-  mt: vec,
-  force: vec,
-  mass: number,
-  drag: number,
-  viscosity: number,
-  maxMomentum: number
-): vec {
-  const mx = force[0] / mass + mt[0];
-  const my = force[1] / mass + mt[1];
-  const norm = Math.sqrt(Math.pow(mx, 2) + Math.pow(my, 2));
-  let m = norm * (1 - drag);
-  m =
-    m < maxMomentum
-      ? m
-      : maxMomentum *
-        (Math.exp(-viscosity * (m - maxMomentum)) * viscosity +
-          (1 - viscosity));
-  return [(m * mx) / norm, (m * my) / norm];
 }
 
 /**

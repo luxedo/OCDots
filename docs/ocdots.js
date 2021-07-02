@@ -109,27 +109,37 @@ export function movePoints(_a) {
         ? charge
         : new Array(p.length).fill(charge);
     var N = points.length;
-    // Calculate forces
-    var pf = p.map(function (pt, i) { return pointForces(pt, _charge[i], p, _charge); });
-    var bf = p.map(function (pt) { return polygonForces(pt, poly, parallelForces); });
-    // Update momentum
-    m = m.map(function (mt, i) {
+    for (var i = 0; i < p.length; i++) {
+        // Calculate forces
+        var pt = points[i];
+        var pf = pointForces(pt, _charge[i], points, _charge);
+        var bf = polygonForces(pt, poly, parallelForces);
         var force = [
-            Math.pow(10, baseForce) * (pf[i][0] + (wallForces * N * bf[i][0]) / S),
-            Math.pow(10, baseForce) * (pf[i][1] + (wallForces * N * bf[i][1]) / S),
+            Math.pow(10, baseForce) * (pf[0] + (wallForces * N * bf[0]) / S),
+            Math.pow(10, baseForce) * (pf[1] + (wallForces * N * bf[1]) / S),
             // Polygon forces are normalized to it's total length and
             // multiplied by wallForces
         ];
-        return updateMomentum(mt, force, _mass[i], drag, viscosity, maxMomentum);
-    });
-    // Update position
-    p = p.map(function (pt, i) {
+        // Update momentum
+        var mx = force[0] / _mass[i] + m[i][0];
+        var my = force[1] / _mass[i] + m[i][1];
+        var norm = Math.sqrt(Math.pow(mx, 2) + Math.pow(my, 2));
+        var mf = norm * (1 - drag);
+        mf =
+            mf < maxMomentum
+                ? mf
+                : maxMomentum *
+                    (Math.exp(-viscosity * (mf - maxMomentum)) * viscosity +
+                        (1 - viscosity));
+        m[i] = [(mf * mx) / norm, (mf * my) / norm];
+        // Update position
         for (var j = 0; j < 10; j++) {
             // We move points as close to the polygon as possible
             var px = pt[0] + m[i][0];
             var py = pt[1] + m[i][1];
             if (checkInbounds([px, py], poly)) {
-                return [px, py];
+                p[i] = [px, py];
+                break;
             }
             // Lose momentum if colliding into the walls
             m[i][0] /= i + 2;
@@ -139,8 +149,7 @@ export function movePoints(_a) {
                 m[i][1] = 0;
             }
         }
-        return pt;
-    });
+    }
     return [p, m];
 }
 /**
@@ -154,16 +163,17 @@ export function movePoints(_a) {
  * @return {Array} force Sum of forces acting on pt
  */
 export function pointForces(pt, c, points, charge) {
-    return points.reduce(function (acc, pt0, i) {
-        var vdx = pt[0] - pt0[0];
-        var vdy = pt[1] - pt0[1];
+    var f = [0, 0];
+    for (var i = 0; i < points.length; i++) {
+        var vdx = pt[0] - points[i][0];
+        var vdy = pt[1] - points[i][1];
         var norm2 = Math.pow(vdx, 2) + Math.pow(vdy, 2);
         norm2 = norm2 != 0 ? norm2 : Infinity;
         var norm = Math.sqrt(norm2);
-        var fx = (c * charge[i] * vdx) / norm / norm2;
-        var fy = (c * charge[i] * vdy) / norm / norm2;
-        return [acc[0] + fx, acc[1] + fy];
-    }, [0, 0]);
+        f[0] += (c * charge[i] * vdx) / norm / norm2;
+        f[1] += (c * charge[i] * vdy) / norm / norm2;
+    }
+    return f;
 }
 /**
  * Calculates forces on pt from polygon. The forces are the integral
@@ -184,8 +194,10 @@ export function pointForces(pt, c, points, charge) {
  */
 export function polygonForces(pt, polygon, parallelForces) {
     if (parallelForces === void 0) { parallelForces = PARALLELFORCES; }
-    return polygon.slice(1).reduce(function (acc, v2, i1) {
-        var v1 = polygon[i1];
+    var f = [0, 0];
+    for (var i = 1; i < polygon.length; i++) {
+        var v1 = polygon[i - 1];
+        var v2 = polygon[i];
         var t = perpendicularToLine(pt, v1, v2);
         var p = [-t[1], t[0]];
         var nt = Math.sqrt(Math.pow(t[0], 2) + Math.pow(t[1], 2));
@@ -207,9 +219,10 @@ export function polygonForces(pt, polygon, parallelForces) {
                 (tv * t[1]) / nt / dn + (pv * p[1]) / nt / dn,
             ]
             : [(tv * t[0]) / nt / dn, (tv * t[1]) / nt / dn];
-        var f = [modulus * direction[0], modulus * direction[1]];
-        return [acc[0] + f[0], acc[1] + f[1]];
-    }, [0, 0]);
+        f[0] += modulus * direction[0];
+        f[1] += modulus * direction[1];
+    }
+    return f;
 }
 /**
  * Returns the perpendicular line to segment v1 -> v2.
@@ -227,31 +240,6 @@ export function perpendicularToLine(pt, v1, v2) {
     var n = [v1v2[0] / nv1v2, v1v2[1] / nv1v2];
     var d = v1p[0] * n[0] + v1p[1] * n[1];
     return [v1p[0] - d * n[0], v1p[1] - d * n[1]];
-}
-/**
- * Updates the momentum.
- * @private
- *
- * @param {Array} mt Initial momentum
- * @param {Array} force Forcing acting at the point
- * @param {Number} mass Point mass
- * @param {Number} drag The drag coeficient
- * @param {Number} viscosity The viscosity coeficient
- * @param {Number} maxMomentum Maximum momentum for each point
- * @return {Array} mu Updated momentum
- */
-export function updateMomentum(mt, force, mass, drag, viscosity, maxMomentum) {
-    var mx = force[0] / mass + mt[0];
-    var my = force[1] / mass + mt[1];
-    var norm = Math.sqrt(Math.pow(mx, 2) + Math.pow(my, 2));
-    var m = norm * (1 - drag);
-    m =
-        m < maxMomentum
-            ? m
-            : maxMomentum *
-                (Math.exp(-viscosity * (m - maxMomentum)) * viscosity +
-                    (1 - viscosity));
-    return [(m * mx) / norm, (m * my) / norm];
 }
 /**
  * Checks if the point pt is inside polygon.

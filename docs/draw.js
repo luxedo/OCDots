@@ -91,7 +91,17 @@ export function drawPolygonAndPoints(
   mass,
   charge,
   baseRadius = 3,
-  palette = ["#881111", "#000000", "#111188"],
+  palette = [
+    "#FF3333",
+    "#BB2222",
+    "#771111",
+    "#330000",
+    "#000000",
+    "#000033",
+    "#111177",
+    "#2222BB",
+    "#3333FF",
+  ],
   backgroundColor = "#FFFFFF"
 ) {
   const ctx = canvas.getContext("2d");
