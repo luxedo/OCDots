@@ -132,6 +132,7 @@ document.addEventListener("DOMContentLoaded", function () {
     randomMasses,
     charge,
     randomCharges,
+    positiveCharges,
     baseForce,
     drag,
     viscosity,
@@ -160,7 +161,7 @@ document.addEventListener("DOMContentLoaded", function () {
       parallelForces,
       wallForces,
     });
-    if (shakeTicks == 0 ) {
+    if (shakeTicks == 0) {
       momentum = _momentum;
     } else {
       shakeTicks--;
@@ -202,23 +203,21 @@ document.addEventListener("DOMContentLoaded", function () {
   window.resetPoints = () => {
     points = ocdots.randomInPolygon(N, polygon);
     momentum = points.map(() => [0, 0]);
-    window.setMasses(randomMasses)
-    window.setCharges(randomCharges)
+    window.setMasses(randomMasses);
+    window.setCharges(randomCharges, positiveCharges);
   };
 
   window.setMasses = (random) => {
-    if (random)
-      mass = points.map(() => 0.01 + 3 * Math.random());
-    else
-      mass = ocdots.DEFAULTMASS;
-  }
+    if (random) mass = points.map(() => 0.01 + 3 * Math.random());
+    else mass = ocdots.DEFAULTMASS;
+  };
 
-  window.setCharges = (random) => {
-    if (random)
-      charge = points.map(() => 3 * Math.random() - 1.5);
-    else
-      charge = ocdots.DEFAULTMASS;
-  }
+  window.setCharges = (random, positive) => {
+    if (random && !positive) charge = points.map(() => 3 * Math.random() - 1.5);
+    else if (random && positive) charge = points.map(() => 3 * Math.random());
+    else if (!random && !positive) charge = points.map(() => Math.random() > 0.5 ? 1 : -1);
+    else charge = ocdots.DEFAULTMASS;
+  };
 
   window.resetControls = () => {
     N = DEFAULTN;
@@ -233,6 +232,7 @@ document.addEventListener("DOMContentLoaded", function () {
     wallForces = ocdots.WALLFORCES;
     randomMasses = false;
     randomCharges = false;
+    positiveCharges = true;
     polygon = polygons[Math.floor(Math.random() * polygons.length)];
     window.resetPoints();
     document.getElementById("baseForce").value = baseForce;
@@ -243,6 +243,7 @@ document.addEventListener("DOMContentLoaded", function () {
     document.getElementById("parallelForces").checked = parallelForces;
     document.getElementById("randomMasses").checked = randomMasses;
     document.getElementById("randomCharges").checked = randomCharges;
+    document.getElementById("positiveCharges").checked = positiveCharges;
     document.getElementById("wallForces").value = wallForces;
     updateRange();
   };
@@ -270,7 +271,14 @@ document.addEventListener("DOMContentLoaded", function () {
     .getElementById("randomCharges")
     .addEventListener("change", (event) => {
       randomCharges = event.target.checked;
-      window.setCharges(randomCharges);
+      window.setCharges(randomCharges, positiveCharges);
+    });
+
+  document
+    .getElementById("positiveCharges")
+    .addEventListener("change", (event) => {
+      positiveCharges = event.target.checked;
+      window.setCharges(randomCharges, positiveCharges);
     });
 
   window.resetControls();

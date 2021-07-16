@@ -44,12 +44,17 @@ export function drawPoints(
   const minCharge = _charge.reduce((acc, cur) => cur < acc ? cur : acc);
   const deltaCharge = (maxCharge - minCharge)/palette.length;
   let _palette = [...palette];
+  const half = Math.floor(palette.length/2)
   if (minCharge == maxCharge)
-    _palette = [palette[Math.floor(palette.length/2)]]
+    _palette = [palette[half]]
+  else if (minCharge >= 0)
+    _palette = palette.slice(half)
+  else if (maxCharge <= 0)
+    _palette = palette.slice(0, half+1)
 
   points.forEach((pt, i) => {
-    let color = palette[palette.length-1];
-    for (let j=0; j<palette.length; j++) {
+    let color = _palette[_palette.length-1];
+    for (let j=0; j<_palette.length; j++) {
       if (_charge[i] <= minCharge + deltaCharge * (j+1)) {
         color = _palette[j];
         break;
