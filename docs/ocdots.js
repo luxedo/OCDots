@@ -26,12 +26,12 @@ import { simplify } from "./simplify.js";
 // Default values
 export var DEFAULTMASS = 1;
 export var DEFAULTCHARGE = 1;
-export var BASEFORCE = 5;
+export var BASEFORCE = 4;
 export var DRAG = 0.1;
 export var VISCOSITY = 0.1;
 export var MAXMOMENTUM = 5;
 export var PARALLELFORCES = true;
-export var WALLFORCES = 2;
+export var WALLFORCES = 1;
 export var ATTENUATION = 0.001;
 export var SIMPLIFYPOLYGON = 0;
 var GEO_MILIMITER_PRECISION = 100000000;
@@ -142,8 +142,8 @@ export function movePoints(_a) {
                 break;
             }
             // Lose momentum if colliding into the walls
-            m[i][0] /= i + 2;
-            m[i][1] /= i + 2;
+            m[i][0] /= j + 2;
+            m[i][1] /= j + 2;
             if (isNaN(m[i][0]) || isNaN(m[i][1])) {
                 m[i][0] = 0;
                 m[i][1] = 0;
@@ -196,31 +196,34 @@ export function polygonForces(pt, polygon, parallelForces) {
     if (parallelForces === void 0) { parallelForces = PARALLELFORCES; }
     var f = [0, 0];
     for (var i = 1; i < polygon.length; i++) {
-        var v1 = polygon[i - 1];
-        var v2 = polygon[i];
-        var t = perpendicularToLine(pt, v1, v2);
-        var p = [-t[1], t[0]];
-        var nt = Math.sqrt(Math.pow(t[0], 2) + Math.pow(t[1], 2));
-        var v1pt = [pt[0] - v1[0], pt[1] - v1[1]];
-        var v2pt = [pt[0] - v2[0], pt[1] - v2[1]];
-        var thetaA = Math.atan2(v1pt[1], v1pt[0]) - Math.atan2(t[1], t[0]);
-        var thetaB = Math.atan2(v2pt[1], v2pt[0]) - Math.atan2(t[1], t[0]);
-        // Align thetaDiff between -PI and +PI
-        var thetaDiff = thetaB - thetaA;
-        thetaDiff = thetaDiff <= Math.PI ? thetaDiff + 2 * Math.PI : thetaDiff;
+        // Useful vectors
+        var a0 = polygon[i - 1]; // a from origin
+        var b0 = polygon[i]; // b from origin
+        var t = perpendicularToLine(pt, a0, b0);
+        var y2 = Math.pow(t[0], 2) + Math.pow(t[1], 2);
+        var y = Math.sqrt(y2);
+        var normal = [b0[0] - a0[0], b0[1] - a0[1]];
+        var n2 = Math.sqrt(Math.pow(normal[0], 2) + Math.pow(normal[1], 2));
+        var xn = [normal[0] / n2, normal[1] / n2];
+        var yn = [xn[1], -xn[0]];
+        var apt = [a0[0] - pt[0], a0[1] - pt[1]];
+        var bpt = [b0[0] - pt[0], b0[1] - pt[1]];
+        // The Magic
+        var thetaT = Math.atan2(t[1], t[0]);
+        var thetaA = thetaT - Math.atan2(apt[1], apt[0]);
+        var thetaB = thetaT - Math.atan2(bpt[1], bpt[0]);
+        var thetaDiff = thetaB - thetaA; // Align thetaDiff between 0 and +PI
+        thetaDiff = thetaDiff <= 0 ? thetaDiff + 2 * Math.PI : thetaDiff;
         thetaDiff = thetaDiff > Math.PI ? thetaDiff - 2 * Math.PI : thetaDiff;
-        var modulus = (1 / nt) * Math.sin((1 / 2) * thetaDiff);
-        var tv = Math.sin(thetaB) - Math.sin(thetaA); // Perpendicular fraction
-        var pv = -(Math.cos(thetaB) - Math.cos(thetaA)); // Parallel fraction
-        var dn = Math.sqrt(Math.pow(pv, 2) + Math.pow(tv, 2));
-        var direction = parallelForces
-            ? [
-                (tv * t[0]) / nt / dn + (pv * p[0]) / nt / dn,
-                (tv * t[1]) / nt / dn + (pv * p[1]) / nt / dn,
-            ]
-            : [(tv * t[0]) / nt / dn, (tv * t[1]) / nt / dn];
-        f[0] += modulus * direction[0];
-        f[1] += modulus * direction[1];
+        var Ex = 0; // Parallel fraction
+        var Ey = 0; // Perpendicular fraction
+        if (y != 0) {
+            // Just in case. We pretend nothing happens if segment is colinear with point.
+            Ex = parallelForces ? (Math.cos(thetaB) - Math.cos(thetaA)) / y : 0;
+            Ey = (Math.sin(thetaB) - Math.sin(thetaA)) / y;
+        }
+        f[0] += Ey * yn[0] + Ex * xn[0];
+        f[1] += Ey * yn[1] + Ex * xn[1];
     }
     return f;
 }
@@ -242,9 +245,28 @@ export function perpendicularToLine(pt, v1, v2) {
     return [v1p[0] - d * n[0], v1p[1] - d * n[1]];
 }
 /**
+ * Tests if a point is Left|On|Right of an infinite line.
+ * From: https://github.com/iominh/point-in-polygon-extended/blob/master/src/index.js
+ *
+ * See http://geomalgorithms.com/a01-_area.html
+ *
+ * @param {object} p0 x,y point
+ * @param {object} p1 x,y point
+ * @param {object} p2 x,y point
+ * @returns {number}
+ *  >0 for P2 left of the line through P0 and P1,
+ *  =0 for P2  on the line,
+ *  <0 for P2  right of the line
+ */
+function isLeft(p0, p1, p2) {
+    return (p1[0] - p0[0]) * (p2[1] - p0[1]) - (p2[0] - p0[0]) * (p1[1] - p0[1]);
+}
+/**
  * Checks if the point pt is inside polygon.
+ * From: https://github.com/iominh/point-in-polygon-extended/blob/master/src/index.js
  *
  * https://en.wikipedia.org/wiki/Even%E2%80%93odd_rule
+ * https://wrf.ecse.rpi.edu/Research/Short_Notes/pnpoly.html
  *
  * @private
  *
@@ -255,18 +277,32 @@ export function perpendicularToLine(pt, v1, v2) {
  * @return {boolean} inbound True if pt is inside the polygon
  */
 export function checkInbounds(pt, polygon) {
-    var inbound = false;
-    var x = pt[0], y = pt[1];
-    for (var i = 1; i < polygon.length; i++) {
-        var _a = polygon[i - 1], p1x = _a[0], p1y = _a[1];
-        var _b = polygon[i], p2x = _b[0], p2y = _b[1];
-        var t = perpendicularToLine(pt, polygon[i - 1], polygon[i]);
-        if (Math.abs(t[0]) + Math.abs(t[1]) < 1)
-            return false; // Let's spare some trouble
-        if (p2y > y != p1y > y && x < p2x + ((p1x - p2x) * (y - p2y)) / (p1y - p2y))
-            inbound = !inbound;
+    if (polygon.length === 0) {
+        return false;
     }
-    return inbound;
+    var n = polygon.length;
+    var newPoints = polygon.slice(0);
+    newPoints.push(polygon[0]);
+    var wn = 0; // wn counter
+    // loop through all edges of the polygon
+    for (var i = 0; i < n; i++) {
+        if (newPoints[i][1] <= pt[1]) {
+            if (newPoints[i + 1][1] > pt[1]) {
+                if (isLeft(newPoints[i], newPoints[i + 1], pt) > 0) {
+                    wn++;
+                }
+            }
+        }
+        else {
+            if (newPoints[i + 1][1] <= pt[1]) {
+                if (isLeft(newPoints[i], newPoints[i + 1], pt) < 0) {
+                    wn--;
+                }
+            }
+        }
+    }
+    // the pt is outside only when this winding number wn===0, otherwise it's inside
+    return wn !== 0;
 }
 /**
  * Creates N points inside the polygon

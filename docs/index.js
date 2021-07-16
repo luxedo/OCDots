@@ -141,11 +141,13 @@ document.addEventListener("DOMContentLoaded", function () {
     wallForces,
     points,
     momentum,
-    polygon;
+    polygon,
+    shakeTicks;
 
   function draw() {
     drawPolygonAndPoints(canvas, points, polygon, mass, charge);
-    [points, momentum] = ocdots.movePoints({
+    let _momentum;
+    [points, _momentum] = ocdots.movePoints({
       points,
       momentum,
       polygon,
@@ -158,6 +160,11 @@ document.addEventListener("DOMContentLoaded", function () {
       parallelForces,
       wallForces,
     });
+    if (shakeTicks == 0 ) {
+      momentum = _momentum;
+    } else {
+      shakeTicks--;
+    }
     window.requestAnimationFrame(draw);
   }
 
@@ -185,24 +192,12 @@ document.addEventListener("DOMContentLoaded", function () {
     updateRange();
   };
   window.shakeem = () => {
-    const shakeMax = 40;
+    shakeTicks = 10;
+    const shakeMax = 10;
     momentum = momentum.map((m) => [
       m[0] + shakeMax * Math.random() - shakeMax / 2,
       m[1] + shakeMax * Math.random() - shakeMax / 2,
     ]);
-    for (let i = 0; i < 10; i++) {
-      let m;
-      [points, m] = ocdots.movePoints({
-        points,
-        momentum,
-        polygon,
-        baseForce: 0,
-        drag: 0,
-        maxMomentum: 10,
-        parallelForces,
-        wallForces,
-      });
-    }
   };
   window.resetPoints = () => {
     points = ocdots.randomInPolygon(N, polygon);
