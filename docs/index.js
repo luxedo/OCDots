@@ -215,7 +215,8 @@ document.addEventListener("DOMContentLoaded", function () {
   window.setCharges = (random, positive) => {
     if (random && !positive) charge = points.map(() => 3 * Math.random() - 1.5);
     else if (random && positive) charge = points.map(() => 3 * Math.random());
-    else if (!random && !positive) charge = points.map(() => Math.random() > 0.5 ? 1 : -1);
+    else if (!random && !positive)
+      charge = points.map(() => (Math.random() > 0.5 ? 1 : -1));
     else charge = ocdots.DEFAULTMASS;
   };
 

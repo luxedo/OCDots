@@ -154,8 +154,10 @@ export function movePoints({
     const pf = pointForces(pt, _charge[i], points, _charge);
     const bf = polygonForces(pt, poly, parallelForces);
     const force: vec = [
-      Math.pow(10, baseForce) * (pf[0] + (wallForces * N * bf[0]) / S),
-      Math.pow(10, baseForce) * (pf[1] + (wallForces * N * bf[1]) / S),
+      Math.pow(10, baseForce) *
+        (pf[0] + (Math.abs(_charge[i]) * wallForces * N * bf[0]) / S),
+      Math.pow(10, baseForce) *
+        (pf[1] + (Math.abs(_charge[i]) * wallForces * N * bf[1]) / S),
       // Polygon forces are normalized to it's total length and
       // multiplied by wallForces
     ];
