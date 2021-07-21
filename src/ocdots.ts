@@ -49,7 +49,7 @@ type PolygonArray<T> = {
 /**
  * Moves points according to the applied forces into it. The forces
  * are: 1) between points, 2) between the point and walls of the
- * polygon, 3) between points and vertexes of the polygon.
+ * polygon.
  *
  * The points moves according to it's momentum up to maxMomentum.
  * Drag reduces the momentum with the square of the momentum.
@@ -75,6 +75,7 @@ type PolygonArray<T> = {
  *    as well.
  * @param {Number=} config.wallForces - Walls forces constant
  * @param {Number=} config.simplifyPolygon - Simplify polygon tolerance (0 disabled)
+ *
  * @return {Array[]} points, momentum - Updated points and momentum
  *      arrays
  */
@@ -205,6 +206,7 @@ export function movePoints({
  * @param {number} c The point charge
  * @param {Array} points The points acting on pt
  * @param {Array} charge Array of other points charges
+ *
  * @return {Array} force Sum of forces acting on pt
  */
 export function pointForces(
@@ -241,6 +243,7 @@ export function pointForces(
  * @param {Array} polygon The polygons vertexes
  * @param {Boolean} parallelForces Sum line segmen parallel forces
  *    as well.
+ *
  * @return {Array} force Sum of forces acting on pt
  */
 export function polygonForces(
@@ -292,6 +295,7 @@ export function polygonForces(
  * @param {Array} pt Point to calculate perpendicular to
  * @param {Array} v1 Line segment vertetx 1
  * @param {Array} v2 Line segment vertetx 2
+ *
  * @return {Array} p Perpendicular vector
  */
 export function perpendicularToLine(pt: vec, v1: vec, v2: vec): vec {
@@ -312,6 +316,7 @@ export function perpendicularToLine(pt: vec, v1: vec, v2: vec): vec {
  * @param {object} p0 x,y point
  * @param {object} p1 x,y point
  * @param {object} p2 x,y point
+ *
  * @returns {number}
  *  >0 for P2 left of the line through P0 and P1,
  *  =0 for P2  on the line,
@@ -334,6 +339,7 @@ function isLeft(p0, p1, p2) {
  * @param {Array} polygon Set of points that describes the polygon.
  *      This polygon should be ordered (clockwise or anticlockwise) and
  *      closed i.e. first points equals the last point.
+ *
  * @return {boolean} inbound True if pt is inside the polygon
  */
 export function checkInbounds(pt: vec, polygon: PolygonArray<vec>): boolean {
@@ -373,6 +379,7 @@ export function checkInbounds(pt: vec, polygon: PolygonArray<vec>): boolean {
  * @param {Array} polygon Set of points that describes the polygon.
  *      This polygon should be ordered (clockwise or anticlockwise) and
  *      closed i.e. first points equals the last point.
+ *
  * @return {Array} points N points inside the polygon
  */
 export function randomInPolygon(
@@ -412,6 +419,7 @@ export function randomInPolygon(
  *
  * @param {Number} N Number of points
  * @param {Array} geoPolygon Polygon of geo coordinates {lat, lng}
+ *
  * @return {Array} points N points inside the geo polygon
  */
 export function randomInGeoPolygon(
@@ -791,6 +799,7 @@ export function relaxNGeoPoints({
  *
  * @param {Array} geoPolygon Polygon of geo coordinates {lat, lng}
  * @param {Number} width Width of the polygon
+ *
  * @return {Object} { polygon, minLat, minLng, delta }
  */
 export function buildPolygon(
