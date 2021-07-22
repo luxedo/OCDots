@@ -1,7 +1,26 @@
 import * as ocdots from "./ocdots.js";
 import { drawPolygonAndPoints } from "./draw.js";
 
+let randomMasses,
+  randomCharges,
+  positiveCharges,
+  baseForce,
+  drag,
+  viscosity,
+  maxMomentum,
+  parallelForces,
+  wallForces;
+
 document.addEventListener("DOMContentLoaded", function () {
+  loadMainCanvas();
+  loadPointDemo();
+  loadWireDemo();
+  loadDragViscDemo();
+  loadMassChargeDemo();
+  draw();
+});
+
+function loadMainCanvas() {
   const size = 500;
   const canvas = document.getElementById("canvas");
   canvas.width = size;
@@ -127,25 +146,9 @@ document.addEventListener("DOMContentLoaded", function () {
   );
   const DEFAULTN = 21;
 
-  let N,
-    mass,
-    randomMasses,
-    charge,
-    randomCharges,
-    positiveCharges,
-    baseForce,
-    drag,
-    viscosity,
-    attenuation,
-    maxMomentum,
-    parallelForces,
-    wallForces,
-    points,
-    momentum,
-    polygon,
-    shakeTicks;
+  let N, mass, charge, points, momentum, polygon, shakeTicks;
 
-  function draw() {
+  window.drawMain = () => {
     drawPolygonAndPoints(canvas, points, polygon, mass, charge);
     let _momentum;
     [points, _momentum] = ocdots.movePoints({
@@ -166,8 +169,7 @@ document.addEventListener("DOMContentLoaded", function () {
     } else {
       shakeTicks--;
     }
-    window.requestAnimationFrame(draw);
-  }
+  };
 
   window.setValue = (variable, value) => {
     switch (variable) {
@@ -208,7 +210,7 @@ document.addEventListener("DOMContentLoaded", function () {
   };
 
   window.setMasses = (random) => {
-    if (random) mass = points.map(() => 0.01 + 3 * Math.random());
+    if (random) mass = points.map(() => 0.1 + 3 * Math.random());
     else mass = ocdots.DEFAULTMASS;
   };
 
@@ -227,7 +229,6 @@ document.addEventListener("DOMContentLoaded", function () {
     baseForce = ocdots.BASEFORCE;
     drag = ocdots.DRAG;
     viscosity = ocdots.VISCOSITY;
-    attenuation = ocdots.ATTENUATION;
     maxMomentum = ocdots.MAXMOMENTUM;
     parallelForces = ocdots.PARALLELFORCES;
     wallForces = ocdots.WALLFORCES;
@@ -283,5 +284,255 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
   window.resetControls();
-  draw();
-});
+}
+
+function loadPointDemo() {
+  const width = 300;
+  const height = 100;
+  const pad = 100;
+  const canvas = document.getElementById("point-demo");
+  canvas.width = width;
+  canvas.style.width = width;
+  canvas.height = height;
+  canvas.style.height = height;
+  const ctx = canvas.getContext("2d");
+
+  let points, momentum, mass, charge;
+  function resetPointDemo() {
+    points = [
+      [width / 2 + 10 * Math.random() - 5, height / 2 + 10 * Math.random() - 5],
+      [width / 2 + 10 * Math.random() - 5, height / 2 + 10 * Math.random() - 5],
+    ];
+    momentum = points.map(() => [
+      2 * maxMomentum * Math.random() - maxMomentum,
+      2 * maxMomentum * Math.random() - maxMomentum,
+    ]);
+
+    mass = randomMasses
+      ? points.map(() => 0.1 + 3 * Math.random())
+      : ocdots.DEFAULTMASS;
+
+    if (randomCharges && !positiveCharges)
+      charge = points.map(() => 3 * Math.random() - 1.5);
+    else if (randomCharges && positiveCharges)
+      charge = points.map(() => 3 * Math.random());
+    else if (!randomCharges && !positiveCharges)
+      charge = points.map(() => (Math.random() > 0.5 ? 1 : -1));
+    else charge = ocdots.DEFAULTMASS;
+  }
+  let polygon = [
+    [-pad, -pad],
+    [-pad, height + pad],
+    [width + pad, height + pad],
+    [width + pad, -pad],
+  ];
+  resetPointDemo();
+
+  window.drawPointDemo = () => {
+    drawPolygonAndPoints(canvas, points, polygon, mass, charge);
+    let _momentum;
+    [points, momentum] = ocdots.movePoints({
+      points,
+      momentum,
+      polygon,
+      mass,
+      charge,
+      baseForce,
+      drag,
+      viscosity,
+      maxMomentum,
+      parallelForces,
+      wallForces: 6,
+    });
+  };
+  setInterval(resetPointDemo, 3000);
+}
+
+function loadWireDemo() {
+  const width = 300;
+  const height = 100;
+  const pad = 100;
+  const canvas = document.getElementById("wire-demo");
+  canvas.width = width;
+  canvas.style.width = width;
+  canvas.height = height;
+  canvas.style.height = height;
+  const ctx = canvas.getContext("2d");
+
+  let points, momentum, mass, charge;
+  function resetWireDemo() {
+    points = [
+      [width / 2 + 10 * Math.random() - 5, height / 2 + 10 * Math.random() - 5],
+    ];
+    momentum = points.map(() => [
+      2 * maxMomentum * Math.random() - maxMomentum,
+      2 * maxMomentum * Math.random() - maxMomentum,
+    ]);
+
+    mass = randomMasses
+      ? points.map(() => 0.1 + 3 * Math.random())
+      : ocdots.DEFAULTMASS;
+
+    if (randomCharges && !positiveCharges)
+      charge = points.map(() => 3 * Math.random() - 1.5);
+    else if (randomCharges && positiveCharges)
+      charge = points.map(() => 3 * Math.random());
+    else if (!randomCharges && !positiveCharges)
+      charge = points.map(() => (Math.random() > 0.5 ? 1 : -1));
+    else charge = ocdots.DEFAULTMASS;
+  }
+  let polygon = [
+    [0, 0],
+    [0, height],
+    [width, height],
+    [width, 0],
+  ];
+  resetWireDemo();
+
+  window.drawWireDemo = () => {
+    drawPolygonAndPoints(canvas, points, polygon, mass, charge);
+    let _momentum;
+    [points, momentum] = ocdots.movePoints({
+      points,
+      momentum,
+      polygon,
+      mass,
+      charge,
+      baseForce,
+      drag: 0.1 * drag,
+      viscosity,
+      maxMomentum,
+      parallelForces,
+      wallForces: 0.1,
+    });
+  };
+  setInterval(resetWireDemo, 3000);
+}
+
+function loadDragViscDemo() {
+  const width = 300;
+  const height = 100;
+  const pad = 100;
+  const canvas = document.getElementById("drag-visc-demo");
+  canvas.width = width;
+  canvas.style.width = width;
+  canvas.height = height;
+  canvas.style.height = height;
+  const ctx = canvas.getContext("2d");
+
+  let points, momentum, mass, charge;
+  function resetDragViscDemo() {
+    points = [
+      [width / 2 + 10 * Math.random() - 5, height / 2 + 10 * Math.random() - 5],
+      [width / 2 + 10 * Math.random() - 5, height / 2 + 10 * Math.random() - 5],
+      [width / 2 + 10 * Math.random() - 5, height / 2 + 10 * Math.random() - 5],
+    ];
+    momentum = points.map(() => [
+      2 * maxMomentum * Math.random() - maxMomentum,
+      2 * maxMomentum * Math.random() - maxMomentum,
+    ]);
+
+    mass = randomMasses
+      ? points.map(() => 0.1 + 3 * Math.random())
+      : ocdots.DEFAULTMASS;
+
+    if (randomCharges && !positiveCharges)
+      charge = points.map(() => 3 * Math.random() - 1.5);
+    else if (randomCharges && positiveCharges)
+      charge = points.map(() => 3 * Math.random());
+    else if (!randomCharges && !positiveCharges)
+      charge = points.map(() => (Math.random() > 0.5 ? 1 : -1));
+    else charge = ocdots.DEFAULTMASS;
+  }
+  let polygon = [
+    [0, 0],
+    [0, height],
+    [width, height],
+    [width, 0],
+  ];
+  resetDragViscDemo();
+
+  window.drawDragViscDemo = () => {
+    drawPolygonAndPoints(canvas, points, polygon, mass, charge);
+    let _momentum;
+    [points, momentum] = ocdots.movePoints({
+      points,
+      momentum,
+      polygon,
+      mass,
+      charge,
+      baseForce,
+      drag: 0.5,
+      viscosity: 0.9,
+      maxMomentum,
+      parallelForces,
+      wallForces: 0.1,
+    });
+  };
+  setInterval(resetDragViscDemo, 3000);
+}
+
+function loadMassChargeDemo() {
+  const width = 300;
+  const height = 100;
+  const pad = 100;
+  const canvas = document.getElementById("mass-charge-demo");
+  canvas.width = width;
+  canvas.style.width = width;
+  canvas.height = height;
+  canvas.style.height = height;
+  const ctx = canvas.getContext("2d");
+
+  let points, momentum, mass, charge;
+  function resetMassChargeDemo() {
+    points = [
+      [width / 2 + 10 * Math.random() - 5, height / 2 + 10 * Math.random() - 5],
+      [width / 2 + 10 * Math.random() - 5, height / 2 + 10 * Math.random() - 5],
+      [width / 2 + 10 * Math.random() - 5, height / 2 + 10 * Math.random() - 5],
+      [width / 2 + 10 * Math.random() - 5, height / 2 + 10 * Math.random() - 5],
+      [width / 2 + 10 * Math.random() - 5, height / 2 + 10 * Math.random() - 5],
+    ];
+    momentum = points.map(() => [
+      2 * maxMomentum * Math.random() - maxMomentum,
+      2 * maxMomentum * Math.random() - maxMomentum,
+    ]);
+
+    mass = points.map(() => 0.1 + 3 * Math.random())
+    charge = points.map(() => (Math.random() > 0.5 ? 1 : -1));
+  }
+  let polygon = [
+    [0, 0],
+    [0, height],
+    [width, height],
+    [width, 0],
+  ];
+  resetMassChargeDemo();
+
+  window.drawMassChargeDemo = () => {
+    drawPolygonAndPoints(canvas, points, polygon, mass, charge);
+    let _momentum;
+    [points, momentum] = ocdots.movePoints({
+      points,
+      momentum,
+      polygon,
+      mass,
+      charge,
+      baseForce: 2,
+      drag,
+      viscosity,
+      maxMomentum,
+      parallelForces,
+      wallForces: 0.1,
+    });
+  };
+  setInterval(resetMassChargeDemo, 3000);
+}
+
+function draw() {
+  drawMain();
+  drawPointDemo();
+  drawWireDemo();
+  drawDragViscDemo();
+  drawMassChargeDemo();
+  window.requestAnimationFrame(draw);
+}

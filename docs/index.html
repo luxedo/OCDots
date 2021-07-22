@@ -40,6 +40,17 @@
       content="https://github.com/luxedo/OCDots/raw/master/docs/gif"
     />
 
+    <script
+      type="text/javascript"
+      async
+      src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-MML-AM_CHTML"
+    ></script>
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}
+      });
+    </script>
+
     <script src="index.js" type="module"></script>
     <link
       rel="stylesheet"
@@ -51,7 +62,7 @@
   <body>
     <div class="container-fluid">
       <div class="row mt-3">
-        <div class="col-sm-6 offset-sm-3 d-flex justify-content-center">
+        <div class="col-sm-6 offset-sm-3 d-flex justify-content-center my-2">
           <h1>OCDots</h1>
           <a class="ml-2" style="" href="https://github.com/luxedo/OCDots">
             <img src="GitHub-Mark-32px.png" /><span></span>
@@ -63,16 +74,17 @@
           <em>Shake'em like nobody's watching</em>
         </div>
       </div>
-      <div class="row mt-2">
+      <div class="row my-3">
         <div
           class="col-lg-4 offset-lg-4 col-sm-6 offset-sm-3 d-flex justify-content-center"
         >
-          <!-- <canvas id="canvas" class="w-100 mx-5"></canvas> -->
           <canvas id="canvas" class="mx-5"></canvas>
         </div>
       </div>
       <div class="row mt-2">
-        <div class="col-sm-6 offset-sm-3 col-md-4 offset-md-4">
+        <div
+          class="col-sm-10 offset-sm-1 col-md-8 offset-md-2 col-lg-4 offset-lg-4 mb-5"
+        >
           <div class="row justify-content-center">
             <div class="d-flex flex-column mx-1">
               <label for="baseForce">Base Force</label>
@@ -145,7 +157,10 @@
             </div>
             <div class="d-flex flex-column mx-1 align-self-start">
               <div>
-                <label for="parallelForces" class="ml-2">Parallel Forces</label>
+                <label for="parallelForces" class="ml-2"
+                  >Parallel<br />
+                  Forces</label
+                >
               </div>
               <div class="m-auto">
                 <input
@@ -157,7 +172,9 @@
             </div>
             <div class="d-flex flex-column mx-1 align-self-start">
               <div>
-                <label for="randomMasses" class="ml-2">Random Masses</label>
+                <label for="randomMasses" class="ml-2"
+                  >Random<br />Masses</label
+                >
               </div>
               <div class="m-auto">
                 <input type="checkbox" id="randomMasses" />
@@ -165,7 +182,9 @@
             </div>
             <div class="d-flex flex-column mx-1 align-self-start">
               <div>
-                <label for="randomCharges" class="ml-2">Random Charges</label>
+                <label for="randomCharges" class="ml-2"
+                  >Random<br />Charges</label
+                >
               </div>
               <div class="m-auto">
                 <input type="checkbox" id="randomCharges" />
@@ -174,7 +193,7 @@
             <div class="d-flex flex-column mx-1 align-self-start">
               <div>
                 <label for="positiveCharges" class="ml-2"
-                  >Positive Charges</label
+                  >Positive<br />Charges</label
                 >
               </div>
               <div class="m-auto">
@@ -193,8 +212,8 @@
             >
               Reset Controls
             </button>
-            <div class="d-flex flex-column mx-2">
-              <label for="N" class="d-block ml-1 mb-0">Dots</label>
+            <div class="d-flex flex-column mx-1 align-self-start">
+              <label for="N" class="d-block ml-1 mb-0 text-center">Dots</label>
               <input
                 type="number"
                 class="form-control ml-1"
@@ -204,23 +223,181 @@
                 min="1"
               />
             </div>
-            <div class="row mt-2">
-              <div class="col-sm-6 offset-sm-3 d-flex justify-content-center">
-                <button
-                  class="btn btn-success mx-2 align-self-end"
-                  onclick="shakeem()"
-                >
-                  Shake'em
-                </button>
-                <button
-                  class="btn btn-danger mx-2 px-4 align-self-end"
-                  onclick="resetPoints()"
-                >
-                  Reset
-                </button>
-              </div>
-            </div>
+            <button
+              class="btn btn-success mx-2 align-self-end"
+              onclick="shakeem()"
+            >
+              Shake'em
+            </button>
+            <button
+              class="btn btn-danger mx-2 px-4 align-self-end"
+              onclick="resetPoints()"
+            >
+              Reset
+            </button>
           </div>
+        </div>
+      </div>
+      <div class="row mt-5">
+        <div
+          class="mt-5 col-sm-8 offset-sm-2 col-md-6 offset-md-3 col-lg-4 offset-lg-4"
+        >
+          <h2>How it works</h2>
+          <p>
+            <b>OCDots</b> simulates Coulomb's forces between dots, and charged
+            wire → charged point forces between each dot and the walls of the
+            polygon.
+          </p>
+          <p>
+            This project was created to generate somewhat evenly distributed
+            points inside of a polygon. It ended up being much more interesting
+            than expected
+          </p>
+          <p>
+            <b>Point to point</b> forces are directly proportional to their
+            charges and masses, and inversely proportional to the square of the
+            distance between them.
+          </p>
+          <p>
+            <math display="block" overflow="scroll">
+              <mrow>
+                <mo stretchy="true">|</mo>
+                <msub>
+                  <mrow><mi>F</mi></mrow>
+                </msub>
+                <mspace width="0.2em" /><mo stretchy="true">|</mo>
+              </mrow>
+              <mo>=</mo>
+              <mrow>
+                <msub>
+                  <mrow><mi>k</mi></mrow>
+                  <mrow><mi>c</mi></mrow>
+                </msub>
+                <mfrac>
+                  <mrow>
+                    <mo stretchy="true">|</mo>
+                    <msub>
+                      <mrow><mi>q</mi></mrow>
+                      <mrow><mi>1</mi></mrow>
+                    </msub>
+                    <msub>
+                      <mrow><mi>q</mi></mrow>
+                      <mrow><mi>2</mi></mrow>
+                    </msub>
+                    <mo stretchy="true">|</mo>
+                  </mrow>
+                  <mrow>
+                    <msup>
+                      <mrow><mi>r</mi></mrow>
+                      <mrow><mi>2</mi></mrow>
+                    </msup>
+                  </mrow>
+                </mfrac>
+              </mrow>
+            </math>
+          </p>
+          <p>
+            <canvas id="point-demo" class="w-100"></canvas>
+          </p>
+          <p>
+            <b>Polygon to point</b> forces are the sum of forces for each wire
+            segment that composes a polygon. Parallel $(E_x)$ and perpendicular
+            $(E_y)$ electric fields can be easily computed when described by the
+            angle between the pont and vertex $a (θ_a)$, the vertex $b (θ_b)$ and
+            the normal from the point to the line $(y)$.
+            For <b>OCDots</b>, the points are always repelled from the walls even
+            when they have negative charges.
+            <math display="block" overflow="scroll">
+              <mrow>
+                <msub>
+                  <mrow><mi>E</mi></mrow>
+                  <mrow><mi>x</mi></mrow>
+                </msub>
+                <mo>=</mo>
+                <mfrac>
+                  <mrow><mi>k</mi><mo>λ</mo></mrow>
+                  <mi>y</mi>
+                </mfrac>
+                <mrow>
+                  <mo stretchy="true">[</mo>
+                  <mrow>
+                    <mtext>cos</mtext><mo></mo>
+                    <msub>
+                      <mrow><mo>θ</mo></mrow>
+                      <mrow><mi>b</mi></mrow>
+                    </msub>
+                    <mo>−</mo>
+                    <mtext>cos</mtext><mo></mo>
+                    <msub>
+                      <mrow><mo>θ</mo></mrow>
+                      <mrow><mi>a</mi></mrow>
+                    </msub>
+                  </mrow>
+                  <mo stretchy="true">]</mo>
+                </mrow>
+              </mrow>
+            </math>
+
+            <math display="block" overflow="scroll">
+              <mrow>
+                <msub>
+                  <mrow><mi>E</mi></mrow>
+                  <mrow><mi>y</mi></mrow>
+                </msub>
+                <mo>=</mo>
+                <mfrac>
+                  <mrow><mi>k</mi><mo>λ</mo></mrow>
+                  <mi>y</mi>
+                </mfrac>
+                <mrow>
+                  <mo stretchy="true">[</mo>
+                  <mrow>
+                    <mtext>sin</mtext><mo></mo>
+                    <msub>
+                      <mrow><mo>θ</mo></mrow>
+                      <mrow><mi>b</mi></mrow>
+                    </msub>
+                    <mo>−</mo>
+                    <mtext>sin</mtext><mo></mo>
+                    <msub>
+                      <mrow><mo>θ</mo></mrow>
+                      <mrow><mi>a</mi></mrow>
+                    </msub>
+                  </mrow>
+                  <mo stretchy="true">]</mo>
+                </mrow>
+              </mrow>
+            </math>
+          </p>
+          <p>
+            <canvas id="wire-demo" class="w-100"></canvas>
+          </p>
+
+          <p>
+            Wire to point forces are very well described in this
+            <a href="https://aapt.scitation.org/doi/full/10.1119/1.4906421">
+              paper
+            </a>
+          </p>
+          <p>
+            <b>Base Force</b> is the variable that controls the overall force
+            between elements. <b>Drag</b> linearly reduces the momentum at 
+            each time step. While <b>Viscosity</b> exponentially reduces the 
+            momentum when the resulting force is too high. <b>Max Momentum</b> 
+            clips the momentum at each time step and also sets the initial 
+            boundary for the <b>Viscosity</b> momentum decay.
+          </p>
+          <p>
+            <canvas id="drag-visc-demo" class="w-100"></canvas>
+          </p>
+          <p>
+            It's possible to set the <b>mass</b> and <b>charge</b> for each 
+            point, that will affect the final force and also the final 
+            velocity for given momentum.
+          </p>
+          <p>
+            <canvas id="mass-charge-demo" class="w-100"></canvas>
+          </p>
         </div>
       </div>
       <div class="row mt-5 footer">
