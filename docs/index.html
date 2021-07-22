@@ -303,10 +303,10 @@
             <b>Polygon to point</b> forces are the sum of forces for each wire
             segment that composes a polygon. Parallel $(E_x)$ and perpendicular
             $(E_y)$ electric fields can be easily computed when described by the
-            angle between the pont and vertex $a (θ_a)$, the vertex $b (θ_b)$ and
-            the normal from the point to the line $(y)$.
-            For <b>OCDots</b>, the points are always repelled from the walls even
-            when they have negative charges.
+            angle between the pont and vertex $a (θ_a)$, the vertex $b (θ_b)$
+            and the normal from the point to the line $(y)$. For <b>OCDots</b>,
+            the points are always repelled from the walls even when they have
+            negative charges.
             <math display="block" overflow="scroll">
               <mrow>
                 <msub>
@@ -381,19 +381,19 @@
           </p>
           <p>
             <b>Base Force</b> is the variable that controls the overall force
-            between elements. <b>Drag</b> linearly reduces the momentum at 
-            each time step. While <b>Viscosity</b> exponentially reduces the 
-            momentum when the resulting force is too high. <b>Max Momentum</b> 
-            clips the momentum at each time step and also sets the initial 
-            boundary for the <b>Viscosity</b> momentum decay.
+            between elements. <b>Drag</b> linearly reduces the momentum at each
+            time step. While <b>Viscosity</b> exponentially reduces the momentum
+            when the resulting force is too high. <b>Max Momentum</b> clips the
+            momentum at each time step and also sets the initial boundary for
+            the <b>Viscosity</b> momentum decay.
           </p>
           <p>
             <canvas id="drag-visc-demo" class="w-100"></canvas>
           </p>
           <p>
-            It's possible to set the <b>mass</b> and <b>charge</b> for each 
-            point, that will affect the final force and also the final 
-            velocity for given momentum.
+            It's possible to set the <b>mass</b> and <b>charge</b> for each
+            point, that will affect the final force and also the final velocity
+            for given momentum.
           </p>
           <p>
             <canvas id="mass-charge-demo" class="w-100"></canvas>

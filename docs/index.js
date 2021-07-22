@@ -345,7 +345,7 @@ function loadPointDemo() {
       wallForces: 6,
     });
   };
-  setInterval(resetPointDemo, 3000);
+  setInterval(resetPointDemo, 3000 + 1000 * Math.random());
 }
 
 function loadWireDemo() {
@@ -406,7 +406,7 @@ function loadWireDemo() {
       wallForces: 0.1,
     });
   };
-  setInterval(resetWireDemo, 3000);
+  setInterval(resetWireDemo, 3000 + 1000 * Math.random());
 }
 
 function loadDragViscDemo() {
@@ -469,7 +469,7 @@ function loadDragViscDemo() {
       wallForces: 0.1,
     });
   };
-  setInterval(resetDragViscDemo, 3000);
+  setInterval(resetDragViscDemo, 3000 + 1000 * Math.random());
 }
 
 function loadMassChargeDemo() {
@@ -525,7 +525,7 @@ function loadMassChargeDemo() {
       wallForces: 0.1,
     });
   };
-  setInterval(resetMassChargeDemo, 3000);
+  setInterval(resetMassChargeDemo, 3000 + 1000 * Math.random());
 }
 
 function draw() {
