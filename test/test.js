@@ -291,11 +291,9 @@ describe("Test public functions", () => {
     });
   });
   it("Fails with a polygon smaller than 3 vertices", () => {
-    const N = 10;
-    const iterations = 500;
     const width = 600;
     assert.throws(() => {
-      const pf = ocdots.movePoints({
+      ocdots.movePoints({
         points: [[0, 0]],
         momentum: [[0, 0]],
         polygon: [
