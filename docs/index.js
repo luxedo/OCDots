@@ -313,13 +313,7 @@ function loadPointDemo() {
       ? points.map(() => 0.1 + 3 * Math.random())
       : ocdots.DEFAULTMASS;
 
-    if (randomCharges && !positiveCharges)
-      charge = points.map(() => 3 * Math.random() - 1.5);
-    else if (randomCharges && positiveCharges)
-      charge = points.map(() => 3 * Math.random());
-    else if (!randomCharges && !positiveCharges)
-      charge = points.map(() => (Math.random() > 0.5 ? 1 : -1));
-    else charge = ocdots.DEFAULTMASS;
+    charge = randomCharges ? points.map(() => 3 * Math.random()) : ocdots.DEFAULTMASS
   }
   let polygon = [
     [-pad, -pad],
@@ -374,13 +368,7 @@ function loadWireDemo() {
       ? points.map(() => 0.1 + 3 * Math.random())
       : ocdots.DEFAULTMASS;
 
-    if (randomCharges && !positiveCharges)
-      charge = points.map(() => 3 * Math.random() - 1.5);
-    else if (randomCharges && positiveCharges)
-      charge = points.map(() => 3 * Math.random());
-    else if (!randomCharges && !positiveCharges)
-      charge = points.map(() => (Math.random() > 0.5 ? 1 : -1));
-    else charge = ocdots.DEFAULTMASS;
+    charge = randomCharges ? points.map(() => 3 * Math.random()) : ocdots.DEFAULTMASS
   }
   let polygon = [
     [0, 0],
@@ -437,13 +425,7 @@ function loadDragViscDemo() {
       ? points.map(() => 0.1 + 3 * Math.random())
       : ocdots.DEFAULTMASS;
 
-    if (randomCharges && !positiveCharges)
-      charge = points.map(() => 3 * Math.random() - 1.5);
-    else if (randomCharges && positiveCharges)
-      charge = points.map(() => 3 * Math.random());
-    else if (!randomCharges && !positiveCharges)
-      charge = points.map(() => (Math.random() > 0.5 ? 1 : -1));
-    else charge = ocdots.DEFAULTMASS;
+    charge = randomCharges ? points.map(() => 3 * Math.random()) : ocdots.DEFAULTMASS
   }
   let polygon = [
     [0, 0],
