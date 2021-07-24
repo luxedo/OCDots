@@ -146,7 +146,7 @@ function loadMainCanvas() {
   );
   const DEFAULTN = 21;
 
-  let N, mass, charge, points, momentum, polygon, shakeTicks;
+  let N, mass, charge, points, momentum, polygon, shakeTicks=0;
 
   window.drawMain = () => {
     drawPolygonAndPoints(canvas, points, polygon, mass, charge);
@@ -172,6 +172,7 @@ function loadMainCanvas() {
   };
 
   window.setValue = (variable, value) => {
+    value = parseFloat(value);
     switch (variable) {
       case "baseForce":
         baseForce = value;
@@ -241,12 +242,12 @@ function loadMainCanvas() {
     document.getElementById("drag").value = drag;
     document.getElementById("viscosity").value = viscosity;
     document.getElementById("maxMomentum").value = maxMomentum;
+    document.getElementById("wallForces").value = wallForces;
     document.getElementById("N").value = N;
     document.getElementById("parallelForces").checked = parallelForces;
     document.getElementById("randomMasses").checked = randomMasses;
     document.getElementById("randomCharges").checked = randomCharges;
     document.getElementById("positiveCharges").checked = positiveCharges;
-    document.getElementById("wallForces").value = wallForces;
     updateRange();
   };
   function updateRange() {
