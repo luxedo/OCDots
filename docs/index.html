@@ -244,9 +244,9 @@
         >
           <h2>How it works</h2>
           <p>
-            <b>OCDots</b> simulates Coulomb's forces between dots, and charged
-            wire → charged point forces between each dot and the walls of the
-            polygon.
+            <strong>OCDots</strong> simulates Coulomb's forces between dots, and
+            charged wire → charged point forces between each dot and the walls
+            of the polygon.
           </p>
           <p>
             This project was created to generate somewhat evenly distributed
@@ -254,9 +254,9 @@
             than expected
           </p>
           <p>
-            <b>Point to point</b> forces are directly proportional to their
-            charges and masses, and inversely proportional to the square of the
-            distance between them.
+            <strong>Point to point</strong> forces are directly proportional to
+            their charges and masses, and inversely proportional to the square
+            of the distance between them.
           </p>
           <p>
             <math display="block" overflow="scroll">
@@ -300,13 +300,13 @@
             <canvas id="point-demo" class="w-100"></canvas>
           </p>
           <p>
-            <b>Polygon to point</b> forces are the sum of forces for each wire
-            segment that composes a polygon. Parallel $(E_x)$ and perpendicular
-            $(E_y)$ electric fields can be easily computed when described by the
-            angle between the pont and vertex $a (θ_a)$, the vertex $b (θ_b)$
-            and the normal from the point to the line $(y)$. For <b>OCDots</b>,
-            the points are always repelled from the walls even when they have
-            negative charges.
+            <strong>Polygon to point</strong> forces are the sum of forces for
+            each wire segment that composes a polygon. Parallel $(E_x)$ and
+            perpendicular $(E_y)$ electric fields can be easily computed (and
+            tricky to implement) when described by the angles between the pont
+            and vertex $a (θ_a)$, the vertex $b (θ_b)$ and the normal from the
+            point to the line $(y)$. For <strong>OCDots</strong>, the points are
+            always repelled from the walls even when they have negative charges.
             <math display="block" overflow="scroll">
               <mrow>
                 <msub>
@@ -380,30 +380,34 @@
             </a>
           </p>
           <p>
-            <b>Base Force</b> is the variable that controls the overall force
-            between elements. <b>Drag</b> linearly reduces the momentum at each
-            time step. While <b>Viscosity</b> exponentially reduces the momentum
-            when the resulting force is too high. <b>Max Momentum</b> clips the
-            momentum at each time step and also sets the initial boundary for
-            the <b>Viscosity</b> momentum decay.
+            <strong>Base Force</strong> is the variable that controls the
+            overall force between elements. <strong>Drag</strong> linearly
+            reduces the momentum at each time step. While
+            <strong>Viscosity</strong> exponentially reduces the momentum when
+            the resulting force is too high. <strong>Max Momentum</strong> clips
+            the momentum at each time step and also sets the initial boundary
+            for the <strong>Viscosity</strong> momentum decay.
           </p>
           <p>
             <canvas id="drag-visc-demo" class="w-100"></canvas>
           </p>
           <p>
-            It's possible to set the <b>mass</b> and <b>charge</b> for each
-            point, that will affect the final force and also the final velocity
-            for given momentum.
+            It's possible to set the <strong>mass</strong> and
+            <strong>charge</strong> for each point, that will affect the final
+            force and also the final velocity for given momentum.
           </p>
           <p>
             <canvas id="mass-charge-demo" class="w-100"></canvas>
+          </p>
+          <p>
+            <em>Go on and shake'em!</em>
           </p>
         </div>
       </div>
       <div class="row mt-5 footer">
         <div class="col-sm-6 offset-sm-3 text-center">
           <p>
-            Copyright (c) 2020 Luiz Eduardo Amaral -
+            Copyright (c) 2021 Luiz Eduardo Amaral -
             <a href="mailto:luizamaral306@gmail.com?Subject=OCDots">
               &lt;luizamaral306@gmail.com&gt;
             </a>
