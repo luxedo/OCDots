@@ -58,13 +58,36 @@
       integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z"
       crossorigin="anonymous"
     />
+    <style>
+      div.arrow {
+        height: 50px;
+        width: 100%;
+        position: relative;
+        bottom: -3em;
+        overflow: hidden;
+      }
+      div.arrow:before {
+        position: absolute;
+        top: -50px;
+        left: calc(50% - 35px);
+        content: "";
+        height: 50px;
+        width: 50px;
+        background: white;
+        transform-origin: 0% 100%;
+        -webkit-transform: rotate(45deg);
+        -moz-transform: rotate(45deg);
+        -ms-transform: rotate(45deg);
+        transform: rotate(45deg);
+      }
+    </style>
   </head>
   <body>
     <div class="container-fluid">
-      <div class="row mt-3">
-        <div class="col-sm-6 offset-sm-3 d-flex justify-content-center my-2">
+      <div class="row mt-1">
+        <div class="col-sm-6 offset-sm-3 d-flex justify-content-center my-1">
           <h1>OCDots</h1>
-          <a class="ml-2" style="" href="https://github.com/luxedo/OCDots">
+          <a class="ml-2" href="https://github.com/luxedo/OCDots">
             <img src="GitHub-Mark-32px.png" /><span></span>
           </a>
         </div>
@@ -74,7 +97,7 @@
           <em>Shake'em like nobody's watching</em>
         </div>
       </div>
-      <div class="row my-3">
+      <div class="row my-1">
         <div
           class="col-lg-4 offset-lg-4 col-sm-6 offset-sm-3 d-flex justify-content-center"
         >
@@ -83,7 +106,7 @@
       </div>
       <div class="row mt-2">
         <div
-          class="col-sm-10 offset-sm-1 col-md-8 offset-md-2 col-lg-4 offset-lg-4 mb-5"
+          class="col-sm-10 offset-sm-1 col-md-8 offset-md-2 col-lg-4 offset-lg-4 mb-1"
         >
           <div class="row justify-content-center">
             <div class="d-flex flex-column mx-1">
@@ -237,8 +260,10 @@
             </button>
           </div>
         </div>
+        <div class="arrow"></div>
       </div>
-      <div class="row mt-5">
+      <div class="row pt-5 bg-dark text-light">
+        <div class="mt-5 col-12"></div>
         <div
           class="mt-5 col-sm-8 offset-sm-2 col-md-6 offset-md-3 col-lg-4 offset-lg-4"
         >
@@ -383,10 +408,11 @@
             <strong>Base Force</strong> is the variable that controls the
             overall force between elements. <strong>Drag</strong> linearly
             reduces the momentum at each time step. While
-            <strong>Viscosity</strong> exponentially reduces the momentum when
-            the resulting force is too high. <strong>Max Momentum</strong> clips
-            the momentum at each time step and also sets the initial boundary
-            for the <strong>Viscosity</strong> momentum decay.
+            <strong>Viscosity</strong> exponentially reduces the momentum
+            transfer when the resulting force is too high.
+            <strong>Max Momentum</strong> clips the momentum at each time step
+            and also sets the initial boundary for the
+            <strong>Viscosity</strong> momentum decay.
           </p>
           <p>
             <canvas id="drag-visc-demo" class="w-100"></canvas>
@@ -404,8 +430,8 @@
           </p>
         </div>
       </div>
-      <div class="row mt-5 footer">
-        <div class="col-sm-6 offset-sm-3 text-center">
+      <div class="row pt-5 footer bg-dark">
+        <div class="col-sm-6 offset-sm-3 text-center text-light">
           <p>
             Copyright (c) 2021 Luiz Eduardo Amaral -
             <a href="mailto:luizamaral306@gmail.com?Subject=OCDots">
