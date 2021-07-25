@@ -14,7 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 const { assert } = require('chai');
-const ocdots = require('ocdots');
+const ocdots = require('../');
 
 const size = 500;
 const squarePolygon = [
