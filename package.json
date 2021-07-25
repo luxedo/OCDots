@@ -4,15 +4,15 @@
   "description": "OCDots is a library for creating evenly distributed points inside a polygon",
   "main": "dist/ocdots.js",
   "files": [
-    "dist/ocdots.js",
-    "src/ocdots.ts",
-    "dist.browser/ocdots.js"
+    "dist/*",
+    "src/*",
+    "dist.browser/*"
   ],
   "scripts": {
     "dev": "npm install && npm link . && npm link ocdots",
     "build": "npm run lint && npm run build-projects && npm run build-demo",
     "build-projects": "tsc && tsc --project tsconfig-browser.json",
-    "build-demo": "cp dist.browser/* docs/",
+    "build-demo": "prettier --write dist.browser/*.js && cp dist.browser/* docs/",
     "test": "jest --coverage",
     "lint": "eslint '*/**/*{js,ts,tsx}' --quiet --fix && prettier --write \"README.md\" \"docs/*.html\"",
     "doc": "npm run build && npx jsdoc2md docs/ocdots.js > Exports.md"

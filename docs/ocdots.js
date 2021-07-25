@@ -94,13 +94,14 @@ export function movePoints(_a) {
     _k = _a.simplifyPolygon,
     simplifyPolygon = _k === void 0 ? SIMPLIFYPOLYGON : _k;
   // Loads/sets cache
-  var S, poly;
+  var S;
+  var poly;
   if (!polyCache.has(polygon)) {
     if (polygon.length < 3) {
       throw new RangeError('Polygon must have at least 3 vertices');
     }
     poly = __spreadArray([], polygon);
-    if (simplifyPolygon != 0)
+    if (simplifyPolygon != 0) {
       poly = simplify(
         poly.map(function (pt) {
           return { x: pt[0], y: pt[1] };
@@ -110,6 +111,7 @@ export function movePoints(_a) {
       ).map(function (pt) {
         return [pt.x, pt.y];
       });
+    }
     if (poly[0][0] != poly[poly.length - 1][0] || poly[0][1] != poly[poly.length - 1][1]) {
       poly.push(poly[0]);
     }
@@ -125,7 +127,9 @@ export function movePoints(_a) {
   var p = __spreadArray([], points);
   var m = __spreadArray([], momentum);
   var _mass = Array.isArray(mass) ? mass : new Array(p.length).fill(mass);
-  if (_mass.includes(0)) throw new RangeError('Mass cannot be zero.');
+  if (_mass.includes(0)) {
+    throw new RangeError('Mass cannot be zero.');
+  }
   var _charge = Array.isArray(charge) ? charge : new Array(p.length).fill(charge);
   var N = points.length;
   for (var i = 0; i < p.length; i++) {
@@ -216,8 +220,8 @@ export function polygonForces(pt, polygon, parallelForces) {
   var f = [0, 0];
   for (var i = 1; i < polygon.length; i++) {
     // Useful vectors
-    var a0 = polygon[i - 1]; // a from origin
-    var b0 = polygon[i]; // b from origin
+    var a0 = polygon[i - 1]; // A from origin
+    var b0 = polygon[i]; // B from origin
     var t = perpendicularToLine(pt, a0, b0);
     var y2 = Math.pow(t[0], 2) + Math.pow(t[1], 2);
     var y = Math.sqrt(y2);
@@ -305,7 +309,7 @@ export function checkInbounds(pt, polygon) {
   var n = polygon.length;
   var newPoints = polygon.slice(0);
   newPoints.push(polygon[0]);
-  var wn = 0; // wn counter
+  var wn = 0; // Wn counter
   // loop through all edges of the polygon
   for (var i = 0; i < n; i++) {
     if (newPoints[i][1] <= pt[1]) {
@@ -314,15 +318,13 @@ export function checkInbounds(pt, polygon) {
           wn++;
         }
       }
-    } else {
-      if (newPoints[i + 1][1] <= pt[1]) {
-        if (isLeft(newPoints[i], newPoints[i + 1], pt) < 0) {
-          wn--;
-        }
+    } else if (newPoints[i + 1][1] <= pt[1]) {
+      if (isLeft(newPoints[i], newPoints[i + 1], pt) < 0) {
+        wn--;
       }
     }
   }
-  // the pt is outside only when this winding number wn===0, otherwise it's inside
+  // The pt is outside only when this winding number wn===0, otherwise it's inside
   return wn !== 0;
 }
 /**
@@ -360,7 +362,9 @@ export function randomInPolygon(N, polygon) {
   var deltaY = yMax - yMin;
   while (points.length < N) {
     var pt = [xMin + Math.random() * deltaX, yMin + Math.random() * deltaY];
-    if (checkInbounds(pt, polygon)) points.push(pt);
+    if (checkInbounds(pt, polygon)) {
+      points.push(pt);
+    }
   }
   return points;
 }

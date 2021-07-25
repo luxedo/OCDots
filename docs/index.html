@@ -14,31 +14,19 @@
 
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://luxedo.github.io/OCDots/" />
-    <meta
-      property="og:title"
-      content="OCDots - Shake'em like nobody's watching"
-    />
+    <meta property="og:title" content="OCDots - Shake'em like nobody's watching" />
     <meta
       property="og:description"
       content="OCDots is a javascript library for creating evenly distributed points inside a polygon"
     />
-    <meta
-      property="og:image"
-      content="https://github.com/luxedo/OCDots/raw/master/docs/ocdots.gif"
-    />
+    <meta property="og:image" content="https://github.com/luxedo/OCDots/raw/master/docs/ocdots.gif" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="https://luxedo.github.io/OCDots/" />
     <meta name="twitter:creator" content="@_luxedo" />
-    <meta
-      name="twitter:title"
-      content="OCDots - Shake'em like nobody's watching"
-    />
-    <meta name=twitter:description" content="OCDots is a javascript library for
-    creating evenly distributed points inside a polygon" />
-    <meta
-      name="twitter:image"
-      content="https://github.com/luxedo/OCDots/raw/master/docs/ocdots.gif"
-    />
+    <meta name="twitter:title" content="OCDots - Shake'em like nobody's watching" />
+    <meta name=twitter:description" content="OCDots is a javascript library for creating evenly distributed points
+    inside a polygon" />
+    <meta name="twitter:image" content="https://github.com/luxedo/OCDots/raw/master/docs/ocdots.gif" />
 
     <script
       type="text/javascript"
@@ -70,7 +58,7 @@
         position: absolute;
         top: -50px;
         left: calc(50% - 35px);
-        content: "";
+        content: '';
         height: 50px;
         width: 50px;
         background: white;
@@ -87,9 +75,7 @@
       <div class="row mt-1">
         <div class="col-sm-6 offset-sm-3 d-flex justify-content-center my-1">
           <h1>OCDots</h1>
-          <a class="ml-2" href="https://github.com/luxedo/OCDots">
-            <img src="GitHub-Mark-32px.png" /><span></span>
-          </a>
+          <a class="ml-2" href="https://github.com/luxedo/OCDots"> <img src="GitHub-Mark-32px.png" /><span></span> </a>
         </div>
       </div>
       <div class="row">
@@ -98,16 +84,25 @@
         </div>
       </div>
       <div class="row my-1">
-        <div
-          class="col-lg-4 offset-lg-4 col-sm-6 offset-sm-3 d-flex justify-content-center"
-        >
-          <canvas id="canvas" class="mx-5"></canvas>
+        <div class="col-xl-4 offset-xl-4 col-sm-8 offset-sm-2 d-flex justify-content-center">
+          <canvas id="canvas" class="mx-5 w-100"></canvas>
         </div>
       </div>
-      <div class="row mt-2">
-        <div
-          class="col-sm-10 offset-sm-1 col-md-8 offset-md-2 col-lg-4 offset-lg-4 mb-1"
-        >
+      <div class="row mt-2 mb-0">
+        <div class="col mt-1 d-flex pr-0 justify-content-center justify-content-sm-end">
+          <div class="form-outline">
+            <label for="N" class="form-label">Dots</label>
+            <input type="number" class="form-control" style="max-width: 5em" id="N" max="500" min="1" />
+          </div>
+          <button class="btn btn-primary mx-2 align-self-end" onclick="resetControls()">Reset Controls</button>
+        </div>
+        <div class="col mt-1 d-flex pl-0 justify-content-center justify-content-sm-start">
+          <button class="btn btn-success mx-2 align-self-end" onclick="shakeem()">Shake'em</button>
+          <button class="btn btn-danger mx-2 px-4 align-self-end" onclick="resetPoints()">Reset</button>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col mb-1">
           <div class="row justify-content-center">
             <div class="d-flex flex-column mx-1">
               <label for="baseForce">Base Force</label>
@@ -159,11 +154,7 @@
                 step="1"
                 onchange="setValue('maxMomentum', this.value);"
               />
-              <label
-                for="maxMomentum"
-                id="maxMomentumValue"
-                class="mx-1"
-              ></label>
+              <label for="maxMomentum" id="maxMomentumValue" class="mx-1"></label>
             </div>
             <div class="d-flex flex-column mx-1">
               <label for="wallForces" class="ml-2">Wall Forces</label>
@@ -178,6 +169,8 @@
               />
               <label for="wallForces" id="wallForcesValue" class="mx-1"></label>
             </div>
+          </div>
+          <div class="row justify-content-center">
             <div class="d-flex flex-column mx-1 align-self-start">
               <div>
                 <label for="parallelForces" class="ml-2"
@@ -186,18 +179,12 @@
                 >
               </div>
               <div class="m-auto">
-                <input
-                  type="checkbox"
-                  id="parallelForces"
-                  onchange="setValue('parallelForces', this.checked);"
-                />
+                <input type="checkbox" id="parallelForces" onchange="setValue('parallelForces', this.checked);" />
               </div>
             </div>
             <div class="d-flex flex-column mx-1 align-self-start">
               <div>
-                <label for="randomMasses" class="ml-2"
-                  >Random<br />Masses</label
-                >
+                <label for="randomMasses" class="ml-2">Random<br />Masses</label>
               </div>
               <div class="m-auto">
                 <input type="checkbox" id="randomMasses" />
@@ -205,9 +192,7 @@
             </div>
             <div class="d-flex flex-column mx-1 align-self-start">
               <div>
-                <label for="randomCharges" class="ml-2"
-                  >Random<br />Charges</label
-                >
+                <label for="randomCharges" class="ml-2">Random<br />Charges</label>
               </div>
               <div class="m-auto">
                 <input type="checkbox" id="randomCharges" />
@@ -215,9 +200,7 @@
             </div>
             <div class="d-flex flex-column mx-1 align-self-start">
               <div>
-                <label for="positiveCharges" class="ml-2"
-                  >Positive<br />Charges</label
-                >
+                <label for="positiveCharges" class="ml-2">Positive<br />Charges</label>
               </div>
               <div class="m-auto">
                 <input type="checkbox" id="positiveCharges" />
@@ -225,63 +208,27 @@
             </div>
           </div>
         </div>
-      </div>
-      <div class="row">
-        <div class="col-sm-6 offset-sm-3 d-flex justify-content-center">
-          <div class="row justify-content-center">
-            <button
-              class="btn btn-primary mx-2 align-self-end"
-              onclick="resetControls()"
-            >
-              Reset Controls
-            </button>
-            <div class="d-flex flex-column mx-1 align-self-start">
-              <label for="N" class="d-block ml-1 mb-0 text-center">Dots</label>
-              <input
-                type="number"
-                class="form-control ml-1"
-                style="max-width: 5em"
-                id="N"
-                max="300"
-                min="1"
-              />
-            </div>
-            <button
-              class="btn btn-success mx-2 align-self-end"
-              onclick="shakeem()"
-            >
-              Shake'em
-            </button>
-            <button
-              class="btn btn-danger mx-2 px-4 align-self-end"
-              onclick="resetPoints()"
-            >
-              Reset
-            </button>
-          </div>
-        </div>
         <div class="arrow"></div>
       </div>
       <div class="row pt-5 bg-dark text-light">
         <div class="mt-5 col-12"></div>
-        <div
-          class="mt-5 col-sm-8 offset-sm-2 col-md-6 offset-md-3 col-lg-4 offset-lg-4"
-        >
+        <div class="mt-5 col-sm-8 offset-sm-2 col-md-6 offset-md-3 col-lg-4 offset-lg-4">
           <h2>How it works</h2>
           <p>
-            <strong>OCDots</strong> simulates Coulomb's forces between dots, and
-            charged wire → charged point forces between each dot and the walls
-            of the polygon.
+            <strong>OCDots</strong> simulates Coulomb's forces between dots, and charged wire → charged point forces
+            between each dot and the walls of the polygon.
           </p>
           <p>
-            This project was created to generate somewhat evenly distributed
-            points inside of a polygon. It ended up being much more interesting
-            than expected.
+            You can <a href="https://www.npmjs.com/package/ocdots">install</a> <strong>OCDots</strong> with npm and run
+            it in your browser or with node.
           </p>
           <p>
-            <strong>Point to point</strong> forces are directly proportional to
-            their charges and masses, and inversely proportional to the square
-            of the distance between them.
+            This project was created to generate somewhat evenly distributed points inside of a polygon. It ended up
+            being much more interesting than expected.
+          </p>
+          <p>
+            <strong>Point to point</strong> forces are directly proportional to their charges and masses, and inversely
+            proportional to the square of the distance between them.
           </p>
           <p>
             <math display="block" overflow="scroll">
@@ -325,13 +272,11 @@
             <canvas id="point-demo" class="w-100"></canvas>
           </p>
           <p>
-            <strong>Polygon to point</strong> forces are the sum of forces for
-            each wire segment that composes a polygon. Parallel $(E_x)$ and
-            perpendicular $(E_y)$ electric fields can be easily computed (and
-            tricky to implement) when described by the angles between the pont
-            and vertex $a (θ_a)$, the vertex $b (θ_b)$ and the normal from the
-            point to the line $(y)$. For <strong>OCDots</strong>, the points are
-            always repelled from the walls even when they have negative charges.
+            <strong>Polygon to point</strong> forces are the sum of forces for each wire segment that composes a
+            polygon. Parallel $(E_x)$ and perpendicular $(E_y)$ electric fields can be easily computed (and tricky to
+            implement) when described by the angles between the pont and vertex $a (θ_a)$, the vertex $b (θ_b)$ and the
+            normal from the point to the line $(y)$. For <strong>OCDots</strong>, the points are always repelled from
+            the walls even when they have negative charges.
             <math display="block" overflow="scroll">
               <mrow>
                 <msub>
@@ -400,27 +345,21 @@
 
           <p>
             Wire to point forces are very well described in this
-            <a href="https://aapt.scitation.org/doi/full/10.1119/1.4906421">
-              paper
-            </a>
+            <a href="https://aapt.scitation.org/doi/full/10.1119/1.4906421"> paper </a>
           </p>
           <p>
-            <strong>Base Force</strong> is the variable that controls the
-            overall force between elements. <strong>Drag</strong> linearly
-            reduces the momentum at each time step. While
-            <strong>Viscosity</strong> exponentially reduces the momentum
-            transfer when the resulting force is too high.
-            <strong>Max Momentum</strong> clips the momentum at each time step
-            and also sets the initial boundary for the
-            <strong>Viscosity</strong> momentum decay.
+            <strong>Base Force</strong> is the variable that controls the overall force between elements.
+            <strong>Drag</strong> linearly reduces the momentum at each time step. While
+            <strong>Viscosity</strong> exponentially reduces the momentum transfer when the resulting force is too high.
+            <strong>Max Momentum</strong> clips the momentum at each time step and also sets the initial boundary for
+            the <strong>Viscosity</strong> momentum decay.
           </p>
           <p>
             <canvas id="drag-visc-demo" class="w-100"></canvas>
           </p>
           <p>
-            It's possible to set the <strong>mass</strong> and
-            <strong>charge</strong> for each point, that will affect the final
-            force and also the final velocity for given momentum.
+            It's possible to set the <strong>mass</strong> and <strong>charge</strong> for each point, that will affect
+            the final force and also the final velocity for given momentum.
           </p>
           <p>
             <canvas id="mass-charge-demo" class="w-100"></canvas>
@@ -434,9 +373,7 @@
         <div class="col-sm-6 offset-sm-3 text-center text-light">
           <p>
             Copyright (c) 2021 Luiz Eduardo Amaral -
-            <a href="mailto:luizamaral306@gmail.com?Subject=OCDots">
-              &lt;luizamaral306@gmail.com&gt;
-            </a>
+            <a href="mailto:luizamaral306@gmail.com?Subject=OCDots"> &lt;luizamaral306@gmail.com&gt; </a>
             <br />
             This software is under a
             <a href="https://www.gnu.org/licenses/gpl-3.0.en.html">GNU GPL3</a>
