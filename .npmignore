@@ -2,4 +2,3 @@ coverage/
 docs/*
 test/
 .github/
-.jshintrc
