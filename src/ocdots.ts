@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import { simplify } from "./simplify.js";
+import { simplify } from './simplify.js';
 
 // Default values
 export const DEFAULTMASS = 1;
@@ -107,30 +107,27 @@ export function movePoints({
   simplifyPolygon?: number;
 }): [VecArray<vec>, VecArray<vec>] {
   // Loads/sets cache
-  let S: number, poly: PolygonArray<vec>;
+  let S: number;
+  let poly: PolygonArray<vec>;
   if (!polyCache.has(polygon)) {
     if (polygon.length < 3) {
-      throw new RangeError("Polygon must have at least 3 vertices");
+      throw new RangeError('Polygon must have at least 3 vertices');
     }
+
     poly = <PolygonArray<vec>>[...polygon];
-    if (simplifyPolygon != 0) poly = <PolygonArray<vec>>simplify(
-        poly.map((pt) => {
-          return { x: pt[0], y: pt[1] };
-        }),
+    if (simplifyPolygon != 0) {
+      poly = <PolygonArray<vec>>simplify(
+        poly.map((pt) => ({ x: pt[0], y: pt[1] })),
         simplifyPolygon,
         false
-      ).map((pt) => {
-        return <vec>[pt.x, pt.y];
-      });
-    if (
-      poly[0][0] != poly[poly.length - 1][0] ||
-      poly[0][1] != poly[poly.length - 1][1]
-    ) {
+      ).map((pt) => <vec>[pt.x, pt.y]);
+    }
+
+    if (poly[0][0] != poly[poly.length - 1][0] || poly[0][1] != poly[poly.length - 1][1]) {
       poly.push(poly[0]);
     }
-    S = polygon.reduce((acc, cur) => {
-      return acc + Math.sqrt(Math.pow(cur[0], 2) + Math.pow(cur[1], 2));
-    }, 0);
+
+    S = polygon.reduce((acc, cur) => acc + Math.sqrt(cur[0] ** 2 + cur[1] ** 2), 0);
     polyCache.set(polygon, poly);
     sCache.set(polygon, S);
   } else {
@@ -140,13 +137,12 @@ export function movePoints({
 
   let p = <VecArray<vec>>[...points];
   let m = <VecArray<vec>>[...momentum];
-  const _mass: number[] = Array.isArray(mass)
-    ? mass
-    : new Array(p.length).fill(mass);
-  if (_mass.includes(0)) throw new RangeError("Mass cannot be zero.");
-  const _charge: number[] = Array.isArray(charge)
-    ? charge
-    : new Array(p.length).fill(charge);
+  const _mass: number[] = Array.isArray(mass) ? mass : new Array(p.length).fill(mass);
+  if (_mass.includes(0)) {
+    throw new RangeError('Mass cannot be zero.');
+  }
+
+  const _charge: number[] = Array.isArray(charge) ? charge : new Array(p.length).fill(charge);
   const N = points.length;
 
   for (let i = 0; i < p.length; i++) {
@@ -155,10 +151,8 @@ export function movePoints({
     const pf = pointForces(pt, _charge[i], points, _charge);
     const bf = polygonForces(pt, poly, parallelForces);
     const force: vec = [
-      Math.pow(10, baseForce) *
-        (pf[0] + (Math.abs(_charge[i]) * wallForces * N * bf[0]) / S),
-      Math.pow(10, baseForce) *
-        (pf[1] + (Math.abs(_charge[i]) * wallForces * N * bf[1]) / S),
+      Math.pow(10, baseForce) * (pf[0] + (Math.abs(_charge[i]) * wallForces * N * bf[0]) / S),
+      Math.pow(10, baseForce) * (pf[1] + (Math.abs(_charge[i]) * wallForces * N * bf[1]) / S),
       // Polygon forces are normalized to it's total length and
       // multiplied by wallForces
     ];
@@ -166,14 +160,10 @@ export function movePoints({
     // Update momentum
     const mx = force[0] / _mass[i] + m[i][0];
     const my = force[1] / _mass[i] + m[i][1];
-    const norm = Math.sqrt(Math.pow(mx, 2) + Math.pow(my, 2));
+    const norm = Math.sqrt(mx ** 2 + my ** 2);
     let mf = norm * (1 - drag);
     mf =
-      mf < maxMomentum
-        ? mf
-        : maxMomentum *
-          (Math.exp(-viscosity * (mf - maxMomentum)) * viscosity +
-            (1 - viscosity));
+      mf < maxMomentum ? mf : maxMomentum * (Math.exp(-viscosity * (mf - maxMomentum)) * viscosity + (1 - viscosity));
     m[i] = [(mf * mx) / norm, (mf * my) / norm];
 
     // Update position
@@ -185,6 +175,7 @@ export function movePoints({
         p[i] = [px, py];
         break;
       }
+
       // Lose momentum if colliding into the walls
       m[i][0] /= j + 2;
       m[i][1] /= j + 2;
@@ -209,22 +200,18 @@ export function movePoints({
  *
  * @return {Array} force Sum of forces acting on pt
  */
-export function pointForces(
-  pt: vec,
-  c: number,
-  points: VecArray<vec>,
-  charge: number[]
-): vec {
+export function pointForces(pt: vec, c: number, points: VecArray<vec>, charge: number[]): vec {
   const f: vec = [0, 0];
   for (let i = 0; i < points.length; i++) {
     const vdx = pt[0] - points[i][0];
     const vdy = pt[1] - points[i][1];
-    let norm2 = Math.pow(vdx, 2) + Math.pow(vdy, 2);
+    let norm2 = vdx ** 2 + vdy ** 2;
     norm2 = norm2 != 0 ? norm2 : Infinity;
     const norm = Math.sqrt(norm2);
     f[0] += (c * charge[i] * vdx) / norm / norm2;
     f[1] += (c * charge[i] * vdy) / norm / norm2;
   }
+
   return f;
 }
 
@@ -246,21 +233,17 @@ export function pointForces(
  *
  * @return {Array} force Sum of forces acting on pt
  */
-export function polygonForces(
-  pt: vec,
-  polygon: PolygonArray<vec>,
-  parallelForces: boolean = PARALLELFORCES
-): vec {
+export function polygonForces(pt: vec, polygon: PolygonArray<vec>, parallelForces: boolean = PARALLELFORCES): vec {
   const f: vec = [0, 0];
   for (let i = 1; i < polygon.length; i++) {
     // Useful vectors
-    const a0 = polygon[i - 1]; // a from origin
-    const b0 = polygon[i]; // b from origin
+    const a0 = polygon[i - 1]; // A from origin
+    const b0 = polygon[i]; // B from origin
     const t = perpendicularToLine(pt, a0, b0);
-    const y2 = Math.pow(t[0], 2) + Math.pow(t[1], 2);
+    const y2 = t[0] ** 2 + t[1] ** 2;
     const y = Math.sqrt(y2);
     const normal = [b0[0] - a0[0], b0[1] - a0[1]];
-    const n2 = Math.sqrt(Math.pow(normal[0], 2) + Math.pow(normal[1], 2));
+    const n2 = Math.sqrt(normal[0] ** 2 + normal[1] ** 2);
     const xn = [normal[0] / n2, normal[1] / n2];
     const yn = [xn[1], -xn[0]];
     const apt = [a0[0] - pt[0], a0[1] - pt[1]];
@@ -285,6 +268,7 @@ export function polygonForces(
     f[0] += Ey * yn[0] + Ex * xn[0];
     f[1] += Ey * yn[1] + Ex * xn[1];
   }
+
   return f;
 }
 
@@ -300,7 +284,7 @@ export function polygonForces(
  */
 export function perpendicularToLine(pt: vec, v1: vec, v2: vec): vec {
   const v1v2 = [v1[0] - v2[0], v1[1] - v2[1]];
-  const nv1v2 = Math.sqrt(Math.pow(v1v2[0], 2) + Math.pow(v1v2[1], 2));
+  const nv1v2 = Math.sqrt(v1v2[0] ** 2 + v1v2[1] ** 2);
   const v1p = [v1[0] - pt[0], v1[1] - pt[1]];
   const n = [v1v2[0] / nv1v2, v1v2[1] / nv1v2];
   const d = v1p[0] * n[0] + v1p[1] * n[1];
@@ -350,7 +334,7 @@ export function checkInbounds(pt: vec, polygon: PolygonArray<vec>): boolean {
   const n = polygon.length;
   const newPoints = polygon.slice(0);
   newPoints.push(polygon[0]);
-  let wn = 0; // wn counter
+  let wn = 0; // Wn counter
 
   // loop through all edges of the polygon
   for (let i = 0; i < n; i++) {
@@ -360,15 +344,14 @@ export function checkInbounds(pt: vec, polygon: PolygonArray<vec>): boolean {
           wn++;
         }
       }
-    } else {
-      if (newPoints[i + 1][1] <= pt[1]) {
-        if (isLeft(newPoints[i], newPoints[i + 1], pt) < 0) {
-          wn--;
-        }
+    } else if (newPoints[i + 1][1] <= pt[1]) {
+      if (isLeft(newPoints[i], newPoints[i + 1], pt) < 0) {
+        wn--;
       }
     }
   }
-  // the pt is outside only when this winding number wn===0, otherwise it's inside
+
+  // The pt is outside only when this winding number wn===0, otherwise it's inside
   return wn !== 0;
 }
 
@@ -382,10 +365,7 @@ export function checkInbounds(pt: vec, polygon: PolygonArray<vec>): boolean {
  *
  * @return {Array} points N points inside the polygon
  */
-export function randomInPolygon(
-  N: number,
-  polygon: PolygonArray<vec>
-): VecArray<vec> {
+export function randomInPolygon(N: number, polygon: PolygonArray<vec>): VecArray<vec> {
   let points = [];
   const { xMin, xMax, yMin, yMax } = polygon.reduce(
     (acc, v) => {
@@ -405,12 +385,12 @@ export function randomInPolygon(
   const deltaX = xMax - xMin;
   const deltaY = yMax - yMin;
   while (points.length < N) {
-    const pt: vec = [
-      xMin + Math.random() * deltaX,
-      yMin + Math.random() * deltaY,
-    ];
-    if (checkInbounds(pt, polygon)) points.push(pt);
+    const pt: vec = [xMin + Math.random() * deltaX, yMin + Math.random() * deltaY];
+    if (checkInbounds(pt, polygon)) {
+      points.push(pt);
+    }
   }
+
   return <VecArray<vec>>points;
 }
 
@@ -422,21 +402,10 @@ export function randomInPolygon(
  *
  * @return {Array} points N points inside the geo polygon
  */
-export function randomInGeoPolygon(
-  N: number,
-  geoPolygon: VecArray<geoVec>
-): VecArray<geoVec> {
+export function randomInGeoPolygon(N: number, geoPolygon: VecArray<geoVec>): VecArray<geoVec> {
   return <VecArray<geoVec>>randomInPolygon(
     N,
-    <PolygonArray<vec>>(
-      geoPolygon.map(
-        (p) =>
-          <vec>[
-            GEO_MILIMITER_PRECISION * p.lat,
-            GEO_MILIMITER_PRECISION * p.lng,
-          ]
-      )
-    )
+    <PolygonArray<vec>>geoPolygon.map((p) => <vec>[GEO_MILIMITER_PRECISION * p.lat, GEO_MILIMITER_PRECISION * p.lng])
   ).map(
     (p) =>
       <geoVec>{
@@ -510,9 +479,7 @@ export function relaxPoints({
   attenuation?: number;
 }) {
   let p: VecArray<vec> = <VecArray<vec>>[...points];
-  let m: VecArray<vec> = <VecArray<vec>>(
-    (momentum == undefined ? p.map(() => [0, 0]) : [...momentum])
-  );
+  let m: VecArray<vec> = <VecArray<vec>>(momentum == undefined ? p.map(() => [0, 0]) : [...momentum]);
 
   let att = 1 + attenuation;
   for (let i = 0, attIter = att; i < iterations; i++, attIter *= att) {
@@ -530,17 +497,10 @@ export function relaxPoints({
       simplifyPolygon,
     });
     if (callback != undefined) {
-      callback(
-        p,
-        m,
-        polygon,
-        baseForce,
-        drag * attIter,
-        viscosity,
-        maxMomentum
-      );
+      callback(p, m, polygon, baseForce, drag * attIter, viscosity, maxMomentum);
     }
   }
+
   return p;
 }
 
@@ -687,11 +647,7 @@ export function relaxGeoPoints({
 
   const momentum: VecArray<vec> = <VecArray<vec>>geoPoints.map(() => [0, 0]);
   const points = <VecArray<vec>>relaxPoints({
-    points: <VecArray<vec>>(
-      geoPoints.map(
-        (p) => <vec>[(p.lat - minLat) * delta, (p.lng - minLng) * delta]
-      )
-    ),
+    points: <VecArray<vec>>geoPoints.map((p) => <vec>[(p.lat - minLat) * delta, (p.lng - minLng) * delta]),
     momentum,
     polygon,
     iterations,
@@ -828,15 +784,11 @@ export function buildPolygon(
   );
   const delta = width / (maxLng - minLng);
   let polygon: PolygonArray<vec> = <PolygonArray<vec>>(
-    geoPolygon.map(
-      (v) => <vec>[delta * (v.lat - minLat), delta * (v.lng - minLng)]
-    )
+    geoPolygon.map((v) => <vec>[delta * (v.lat - minLat), delta * (v.lng - minLng)])
   );
-  if (
-    polygon[0][0] != polygon[polygon.length - 1][0] ||
-    polygon[0][1] != polygon[polygon.length - 1][1]
-  ) {
+  if (polygon[0][0] != polygon[polygon.length - 1][0] || polygon[0][1] != polygon[polygon.length - 1][1]) {
     polygon.push(polygon[0]);
   }
+
   return { polygon, minLat, minLng, delta };
 }

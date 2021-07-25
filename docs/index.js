@@ -1,17 +1,17 @@
-import * as ocdots from "./ocdots.js";
-import { drawPolygonAndPoints } from "./draw.js";
+import * as ocdots from './ocdots.js';
+import { drawPolygonAndPoints } from './draw.js';
 
-let randomMasses,
-  randomCharges,
-  positiveCharges,
-  baseForce,
-  drag,
-  viscosity,
-  maxMomentum,
-  parallelForces,
-  wallForces;
+let randomMasses;
+let randomCharges;
+let positiveCharges;
+let baseForce;
+let drag;
+let viscosity;
+let maxMomentum;
+let parallelForces;
+let wallForces;
 
-document.addEventListener("DOMContentLoaded", function () {
+document.addEventListener('DOMContentLoaded', () => {
   loadMainCanvas();
   loadPointDemo();
   loadWireDemo();
@@ -22,15 +22,15 @@ document.addEventListener("DOMContentLoaded", function () {
 
 function loadMainCanvas() {
   const size = 500;
-  const canvas = document.getElementById("canvas");
+  const canvas = document.getElementById('canvas');
   canvas.width = size;
   canvas.style.width = size;
   canvas.height = size;
   canvas.style.height = size;
-  const ctx = canvas.getContext("2d");
+  const ctx = canvas.getContext('2d');
 
   let polygons = [
-    // square
+    // Square
     [
       [0, 0],
       [0, size],
@@ -55,7 +55,7 @@ function loadMainCanvas() {
       [size, size],
       [size / 2, 0],
     ],
-    // hexagon - good enough?
+    // Hexagon - good enough?
     [
       [size / 4, 0],
       [0, size / 2],
@@ -65,7 +65,7 @@ function loadMainCanvas() {
       [(3 * size) / 4, 0],
       [size / 4, 0],
     ],
-    // octagon
+    // Octagon
     [
       [(29 * size) / 100, 0],
       [0, (29 * size) / 100],
@@ -109,7 +109,7 @@ function loadMainCanvas() {
     ],
   ];
   const geoPolygons = [
-    // geoPolygon1
+    // GeoPolygon1
     [
       {
         lat: -25.81972648546842,
@@ -141,18 +141,16 @@ function loadMainCanvas() {
       },
     ],
   ];
-  polygons = polygons.concat(
-    geoPolygons.map((geoP) => ocdots.buildPolygon(geoP, size, 0).polygon)
-  );
+  polygons = polygons.concat(geoPolygons.map((geoP) => ocdots.buildPolygon(geoP, size, 0).polygon));
   const DEFAULTN = 21;
 
-  let N,
-    mass,
-    charge,
-    points,
-    momentum,
-    polygon,
-    shakeTicks = 0;
+  let N;
+  let mass;
+  let charge;
+  let points;
+  let momentum;
+  let polygon;
+  let shakeTicks = 0;
 
   window.drawMain = () => {
     drawPolygonAndPoints(canvas, points, polygon, mass, charge);
@@ -192,27 +190,29 @@ function loadMainCanvas() {
   window.setValue = (variable, value) => {
     value = parseFloat(value);
     switch (variable) {
-      case "baseForce":
+      case 'baseForce':
         baseForce = value;
         break;
-      case "drag":
+      case 'drag':
         drag = value;
         break;
-      case "viscosity":
+      case 'viscosity':
         viscosity = value;
         break;
-      case "maxMomentum":
+      case 'maxMomentum':
         maxMomentum = value;
         break;
-      case "parallelForces":
+      case 'parallelForces':
         parallelForces = value;
         break;
-      case "wallForces":
+      case 'wallForces':
         wallForces = value;
         break;
     }
+
     updateRange();
   };
+
   window.shakeem = () => {
     shakeTicks = 10;
     const shakeMax = 10;
@@ -221,6 +221,7 @@ function loadMainCanvas() {
       m[1] + shakeMax * Math.random() - shakeMax / 2,
     ]);
   };
+
   window.resetPoints = () => {
     points = ocdots.randomInPolygon(N, polygon);
     momentum = points.map(() => [0, 0]);
@@ -229,16 +230,23 @@ function loadMainCanvas() {
   };
 
   window.setMasses = (random) => {
-    if (random) mass = points.map(() => 0.1 + 3 * Math.random());
-    else mass = ocdots.DEFAULTMASS;
+    if (random) {
+      mass = points.map(() => 0.1 + 3 * Math.random());
+    } else {
+      mass = ocdots.DEFAULTMASS;
+    }
   };
 
   window.setCharges = (random, positive) => {
-    if (random && !positive) charge = points.map(() => 3 * Math.random() - 1.5);
-    else if (random && positive) charge = points.map(() => 3 * Math.random());
-    else if (!random && !positive)
+    if (random && !positive) {
+      charge = points.map(() => 3 * Math.random() - 1.5);
+    } else if (random && positive) {
+      charge = points.map(() => 3 * Math.random());
+    } else if (!random && !positive) {
       charge = points.map(() => (Math.random() > 0.5 ? 1 : -1));
-    else charge = ocdots.DEFAULTMASS;
+    } else {
+      charge = ocdots.DEFAULTMASS;
+    }
   };
 
   window.resetControls = () => {
@@ -256,51 +264,46 @@ function loadMainCanvas() {
     positiveCharges = true;
     polygon = polygons[Math.floor(Math.random() * polygons.length)];
     window.resetPoints();
-    document.getElementById("baseForce").value = baseForce;
-    document.getElementById("drag").value = drag;
-    document.getElementById("viscosity").value = viscosity;
-    document.getElementById("maxMomentum").value = maxMomentum;
-    document.getElementById("wallForces").value = wallForces;
-    document.getElementById("N").value = N;
-    document.getElementById("parallelForces").checked = parallelForces;
-    document.getElementById("randomMasses").checked = randomMasses;
-    document.getElementById("randomCharges").checked = randomCharges;
-    document.getElementById("positiveCharges").checked = positiveCharges;
+    document.getElementById('baseForce').value = baseForce;
+    document.getElementById('drag').value = drag;
+    document.getElementById('viscosity').value = viscosity;
+    document.getElementById('maxMomentum').value = maxMomentum;
+    document.getElementById('wallForces').value = wallForces;
+    document.getElementById('N').value = N;
+    document.getElementById('parallelForces').checked = parallelForces;
+    document.getElementById('randomMasses').checked = randomMasses;
+    document.getElementById('randomCharges').checked = randomCharges;
+    document.getElementById('positiveCharges').checked = positiveCharges;
     updateRange();
   };
+
   function updateRange() {
-    document.getElementById("baseForceValue").innerHTML = baseForce;
-    document.getElementById("dragValue").innerHTML = drag;
-    document.getElementById("viscosityValue").innerHTML = viscosity;
-    document.getElementById("maxMomentumValue").innerHTML = maxMomentum;
-    document.getElementById("wallForcesValue").innerHTML = wallForces;
+    document.getElementById('baseForceValue').innerHTML = baseForce;
+    document.getElementById('dragValue').innerHTML = drag;
+    document.getElementById('viscosityValue').innerHTML = viscosity;
+    document.getElementById('maxMomentumValue').innerHTML = maxMomentum;
+    document.getElementById('wallForcesValue').innerHTML = wallForces;
   }
 
-  document.getElementById("N").addEventListener("change", (event) => {
+  document.getElementById('N').addEventListener('change', (event) => {
     N = event.srcElement.value;
     window.resetPoints();
   });
 
-  document
-    .getElementById("randomMasses")
-    .addEventListener("change", (event) => {
-      randomMasses = event.target.checked;
-      window.setMasses(randomMasses);
-    });
+  document.getElementById('randomMasses').addEventListener('change', (event) => {
+    randomMasses = event.target.checked;
+    window.setMasses(randomMasses);
+  });
 
-  document
-    .getElementById("randomCharges")
-    .addEventListener("change", (event) => {
-      randomCharges = event.target.checked;
-      window.setCharges(randomCharges, positiveCharges);
-    });
+  document.getElementById('randomCharges').addEventListener('change', (event) => {
+    randomCharges = event.target.checked;
+    window.setCharges(randomCharges, positiveCharges);
+  });
 
-  document
-    .getElementById("positiveCharges")
-    .addEventListener("change", (event) => {
-      positiveCharges = event.target.checked;
-      window.setCharges(randomCharges, positiveCharges);
-    });
+  document.getElementById('positiveCharges').addEventListener('change', (event) => {
+    positiveCharges = event.target.checked;
+    window.setCharges(randomCharges, positiveCharges);
+  });
 
   window.resetControls();
 }
@@ -309,14 +312,17 @@ function loadPointDemo() {
   const width = 300;
   const height = 100;
   const pad = 100;
-  const canvas = document.getElementById("point-demo");
+  const canvas = document.getElementById('point-demo');
   canvas.width = width;
   canvas.style.width = width;
   canvas.height = height;
   canvas.style.height = height;
-  const ctx = canvas.getContext("2d");
+  const ctx = canvas.getContext('2d');
 
-  let points, momentum, mass, charge;
+  let points;
+  let momentum;
+  let mass;
+  let charge;
   function resetPointDemo() {
     points = [
       [width / 2 + 10 * Math.random() - 5, height / 2 + 10 * Math.random() - 5],
@@ -327,15 +333,12 @@ function loadPointDemo() {
       2 * maxMomentum * Math.random() - maxMomentum,
     ]);
 
-    mass = randomMasses
-      ? points.map(() => 0.1 + 3 * Math.random())
-      : ocdots.DEFAULTMASS;
+    mass = randomMasses ? points.map(() => 0.1 + 3 * Math.random()) : ocdots.DEFAULTMASS;
 
-    charge = randomCharges
-      ? points.map(() => 3 * Math.random())
-      : ocdots.DEFAULTMASS;
+    charge = randomCharges ? points.map(() => 3 * Math.random()) : ocdots.DEFAULTMASS;
   }
-  let polygon = [
+
+  const polygon = [
     [-pad, -pad],
     [-pad, height + pad],
     [width + pad, height + pad],
@@ -359,6 +362,7 @@ function loadPointDemo() {
       wallForces: 6,
     });
   };
+
   setInterval(resetPointDemo, 3000 + 1000 * Math.random());
 }
 
@@ -366,31 +370,29 @@ function loadWireDemo() {
   const width = 300;
   const height = 100;
   const pad = 100;
-  const canvas = document.getElementById("wire-demo");
+  const canvas = document.getElementById('wire-demo');
   canvas.width = width;
   canvas.style.width = width;
   canvas.height = height;
   canvas.style.height = height;
-  const ctx = canvas.getContext("2d");
+  const ctx = canvas.getContext('2d');
 
-  let points, momentum, mass, charge;
+  let points;
+  let momentum;
+  let mass;
+  let charge;
   function resetWireDemo() {
-    points = [
-      [width / 2 + 10 * Math.random() - 5, height / 2 + 10 * Math.random() - 5],
-    ];
+    points = [[width / 2 + 10 * Math.random() - 5, height / 2 + 10 * Math.random() - 5]];
     momentum = points.map(() => [
       2 * maxMomentum * Math.random() - maxMomentum,
       2 * maxMomentum * Math.random() - maxMomentum,
     ]);
 
-    mass = randomMasses
-      ? points.map(() => 0.1 + 3 * Math.random())
-      : ocdots.DEFAULTMASS;
+    mass = randomMasses ? points.map(() => 0.1 + 3 * Math.random()) : ocdots.DEFAULTMASS;
 
-    charge = randomCharges
-      ? points.map(() => 3 * Math.random())
-      : ocdots.DEFAULTMASS;
+    charge = randomCharges ? points.map(() => 3 * Math.random()) : ocdots.DEFAULTMASS;
   }
+
   let polygon = [
     [0, 0],
     [0, height],
@@ -415,6 +417,7 @@ function loadWireDemo() {
       wallForces: 0.1,
     });
   };
+
   setInterval(resetWireDemo, 3000 + 1000 * Math.random());
 }
 
@@ -422,14 +425,17 @@ function loadDragViscDemo() {
   const width = 300;
   const height = 100;
   const pad = 100;
-  const canvas = document.getElementById("drag-visc-demo");
+  const canvas = document.getElementById('drag-visc-demo');
   canvas.width = width;
   canvas.style.width = width;
   canvas.height = height;
   canvas.style.height = height;
-  const ctx = canvas.getContext("2d");
+  const ctx = canvas.getContext('2d');
 
-  let points, momentum, mass, charge;
+  let points;
+  let momentum;
+  let mass;
+  let charge;
   function resetDragViscDemo() {
     points = [
       [width / 2 + 10 * Math.random() - 5, height / 2 + 10 * Math.random() - 5],
@@ -441,15 +447,12 @@ function loadDragViscDemo() {
       2 * maxMomentum * Math.random() - maxMomentum,
     ]);
 
-    mass = randomMasses
-      ? points.map(() => 0.1 + 3 * Math.random())
-      : ocdots.DEFAULTMASS;
+    mass = randomMasses ? points.map(() => 0.1 + 3 * Math.random()) : ocdots.DEFAULTMASS;
 
-    charge = randomCharges
-      ? points.map(() => 3 * Math.random())
-      : ocdots.DEFAULTMASS;
+    charge = randomCharges ? points.map(() => 3 * Math.random()) : ocdots.DEFAULTMASS;
   }
-  let polygon = [
+
+  const polygon = [
     [0, 0],
     [0, height],
     [width, height],
@@ -473,6 +476,7 @@ function loadDragViscDemo() {
       wallForces: 0.1,
     });
   };
+
   setInterval(resetDragViscDemo, 3000 + 1000 * Math.random());
 }
 
@@ -480,14 +484,17 @@ function loadMassChargeDemo() {
   const width = 300;
   const height = 100;
   const pad = 100;
-  const canvas = document.getElementById("mass-charge-demo");
+  const canvas = document.getElementById('mass-charge-demo');
   canvas.width = width;
   canvas.style.width = width;
   canvas.height = height;
   canvas.style.height = height;
-  const ctx = canvas.getContext("2d");
+  const ctx = canvas.getContext('2d');
 
-  let points, momentum, mass, charge;
+  let points;
+  let momentum;
+  let mass;
+  let charge;
   function resetMassChargeDemo() {
     points = [
       [width / 2 + 10 * Math.random() - 5, height / 2 + 10 * Math.random() - 5],
@@ -504,7 +511,8 @@ function loadMassChargeDemo() {
     mass = points.map(() => 0.1 + 3 * Math.random());
     charge = points.map(() => (Math.random() > 0.5 ? 1 : -1));
   }
-  let polygon = [
+
+  const polygon = [
     [0, 0],
     [0, height],
     [width, height],
@@ -528,6 +536,7 @@ function loadMassChargeDemo() {
       wallForces: 0.1,
     });
   };
+
   setInterval(resetMassChargeDemo, 3000 + 1000 * Math.random());
 }
 

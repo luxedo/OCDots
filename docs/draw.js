@@ -5,7 +5,7 @@
  * @param {Array} polygon Set of points that describes the polygon
  * @param {String} color Points color
  */
-export function drawPolygon(ctx, polygon, color = "black") {
+export function drawPolygon(ctx, polygon, color = 'black') {
   ctx.strokestyle = color;
   const pt0 = polygon[0];
   ctx.beginPath();
@@ -25,21 +25,10 @@ export function drawPolygon(ctx, polygon, color = "black") {
  * @param {Number} radius points radius
  * @param {String} color Points color
  */
-export function drawPoints(
-  ctx,
-  points,
-  mass,
-  charge,
-  baseRadius = 3,
-  palette = ["#000000"]
-) {
-  const _mass = Array.isArray(mass)
-    ? [...mass]
-    : new Array(points.length).fill(1);
+export function drawPoints(ctx, points, mass, charge, baseRadius = 3, palette = ['#000000']) {
+  const _mass = Array.isArray(mass) ? [...mass] : new Array(points.length).fill(1);
 
-  const _charge = Array.isArray(charge)
-    ? [...charge]
-    : new Array(points.length).fill(1);
+  const _charge = Array.isArray(charge) ? [...charge] : new Array(points.length).fill(1);
   const maxCharge = _charge.reduce((acc, cur) => (cur > acc ? cur : acc));
   const minCharge = _charge.reduce((acc, cur) => (cur < acc ? cur : acc));
   const deltaCharge = (maxCharge - minCharge) / palette.length;
@@ -70,8 +59,8 @@ export function drawPoints(
  * @param {Object} canvas Canvas object
  * @param {String} backgroundColor Points color
  */
-export function resetCanvas(canvas, backgroundColor = "white") {
-  const ctx = canvas.getContext("2d");
+export function resetCanvas(canvas, backgroundColor = 'white') {
+  const ctx = canvas.getContext('2d');
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.fillStyle = backgroundColor;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -93,20 +82,10 @@ export function drawPolygonAndPoints(
   mass,
   charge,
   baseRadius = 3,
-  palette = [
-    "#FF3333",
-    "#BB2222",
-    "#771111",
-    "#330000",
-    "#000000",
-    "#000033",
-    "#111177",
-    "#2222BB",
-    "#3333FF",
-  ],
-  backgroundColor = "#FFFFFF"
+  palette = ['#FF3333', '#BB2222', '#771111', '#330000', '#000000', '#000033', '#111177', '#2222BB', '#3333FF'],
+  backgroundColor = '#FFFFFF'
 ) {
-  const ctx = canvas.getContext("2d");
+  const ctx = canvas.getContext('2d');
   const { width, height } = polygon.reduce(
     (acc, v) => {
       acc.width = acc.width < v[0] ? v[0] : acc.width;
@@ -117,5 +96,5 @@ export function drawPolygonAndPoints(
   );
   resetCanvas(canvas, backgroundColor);
   drawPoints(ctx, points, mass, charge, baseRadius, palette);
-  drawPolygon(ctx, polygon, "#000000");
+  drawPolygon(ctx, polygon, '#000000');
 }
