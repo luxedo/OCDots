@@ -10,7 +10,7 @@
   ],
   "scripts": {
     "dev": "npm install && npm link . && npm link ocdots",
-    "build": "npm run lint && npm run build-projects && npm run build-demo",
+    "build": "npm run build-projects && npm run build-demo",
     "build-projects": "tsc && tsc --project tsconfig-browser.json",
     "build-demo": "prettier --write dist.browser/*.js && cp dist.browser/* docs/",
     "test": "jest --coverage",
@@ -33,7 +33,7 @@
     "@typescript-eslint/parser": "^4.28.4",
     "chai": "^4.2.0",
     "eslint": "^7.31.0",
-    "eslint-config-google": "^0.14.0",
+    "eslint-config-prettier": "^8.3.0",
     "eslint-plugin-prettier": "^3.4.0",
     "husky": "^4.3.0",
     "jest": "^26.4.2",
@@ -44,7 +44,7 @@
   },
   "husky": {
     "hooks": {
-      "pre-commit": "npm run-script build && npm test"
+      "pre-commit": "npm run lint && npm run build && npm test"
     }
   }
 }
