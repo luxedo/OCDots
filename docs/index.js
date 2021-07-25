@@ -146,27 +146,45 @@ function loadMainCanvas() {
   );
   const DEFAULTN = 21;
 
-  let N, mass, charge, points, momentum, polygon, shakeTicks=0;
+  let N,
+    mass,
+    charge,
+    points,
+    momentum,
+    polygon,
+    shakeTicks = 0;
 
   window.drawMain = () => {
     drawPolygonAndPoints(canvas, points, polygon, mass, charge);
-    let _momentum;
-    [points, _momentum] = ocdots.movePoints({
-      points,
-      momentum,
-      polygon,
-      mass,
-      charge,
-      baseForce,
-      drag,
-      viscosity,
-      maxMomentum,
-      parallelForces,
-      wallForces,
-    });
     if (shakeTicks == 0) {
-      momentum = _momentum;
+      [points, momentum] = ocdots.movePoints({
+        points,
+        momentum,
+        polygon,
+        mass,
+        charge,
+        baseForce,
+        drag,
+        viscosity,
+        maxMomentum,
+        parallelForces,
+        wallForces,
+      });
     } else {
+      let _momentum;
+      [points, _momentum] = ocdots.movePoints({
+        points,
+        momentum,
+        polygon,
+        mass,
+        charge,
+        baseForce: 3,
+        drag: 0,
+        viscosity: 0,
+        maxMomentum,
+        parallelForces,
+        wallForces,
+      });
       shakeTicks--;
     }
   };
@@ -313,7 +331,9 @@ function loadPointDemo() {
       ? points.map(() => 0.1 + 3 * Math.random())
       : ocdots.DEFAULTMASS;
 
-    charge = randomCharges ? points.map(() => 3 * Math.random()) : ocdots.DEFAULTMASS
+    charge = randomCharges
+      ? points.map(() => 3 * Math.random())
+      : ocdots.DEFAULTMASS;
   }
   let polygon = [
     [-pad, -pad],
@@ -325,7 +345,6 @@ function loadPointDemo() {
 
   window.drawPointDemo = () => {
     drawPolygonAndPoints(canvas, points, polygon, mass, charge);
-    let _momentum;
     [points, momentum] = ocdots.movePoints({
       points,
       momentum,
@@ -368,7 +387,9 @@ function loadWireDemo() {
       ? points.map(() => 0.1 + 3 * Math.random())
       : ocdots.DEFAULTMASS;
 
-    charge = randomCharges ? points.map(() => 3 * Math.random()) : ocdots.DEFAULTMASS
+    charge = randomCharges
+      ? points.map(() => 3 * Math.random())
+      : ocdots.DEFAULTMASS;
   }
   let polygon = [
     [0, 0],
@@ -380,7 +401,6 @@ function loadWireDemo() {
 
   window.drawWireDemo = () => {
     drawPolygonAndPoints(canvas, points, polygon, mass, charge);
-    let _momentum;
     [points, momentum] = ocdots.movePoints({
       points,
       momentum,
@@ -425,7 +445,9 @@ function loadDragViscDemo() {
       ? points.map(() => 0.1 + 3 * Math.random())
       : ocdots.DEFAULTMASS;
 
-    charge = randomCharges ? points.map(() => 3 * Math.random()) : ocdots.DEFAULTMASS
+    charge = randomCharges
+      ? points.map(() => 3 * Math.random())
+      : ocdots.DEFAULTMASS;
   }
   let polygon = [
     [0, 0],
@@ -437,7 +459,6 @@ function loadDragViscDemo() {
 
   window.drawDragViscDemo = () => {
     drawPolygonAndPoints(canvas, points, polygon, mass, charge);
-    let _momentum;
     [points, momentum] = ocdots.movePoints({
       points,
       momentum,
@@ -480,7 +501,7 @@ function loadMassChargeDemo() {
       2 * maxMomentum * Math.random() - maxMomentum,
     ]);
 
-    mass = points.map(() => 0.1 + 3 * Math.random())
+    mass = points.map(() => 0.1 + 3 * Math.random());
     charge = points.map(() => (Math.random() > 0.5 ? 1 : -1));
   }
   let polygon = [
@@ -493,7 +514,6 @@ function loadMassChargeDemo() {
 
   window.drawMassChargeDemo = () => {
     drawPolygonAndPoints(canvas, points, polygon, mass, charge);
-    let _momentum;
     [points, momentum] = ocdots.movePoints({
       points,
       momentum,
