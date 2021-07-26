@@ -107,17 +107,18 @@ const ocdots = require("ocdots");
 ocdots.movePoints(...);
 ```
 
-In the browser import the script as a [module](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Modules) and then
+In the browser import the script as a [module](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Modules):
 
 ```html
-<script src="node_modules/ocdots/docs/ocdots.js" type="module"></script>
 <script type="module">
+  import * as ocdots from 'node_modules/ocdots/dist.browser/ocdots.js';
   ocdots.movePoints(...);
 </script>
 ```
 
-You can also [download](https://raw.githubusercontent.com/luxedo/OCDots/master/ocdots.js)
-the file and import as you prefer. No extra dependencies are required.
+You can also [download ocdots.js](https://raw.githubusercontent.com/luxedo/OCDots/master/docs/ocdots.js)
+and alongside with [simplify.js](https://raw.githubusercontent.com/luxedo/OCDots/master/docs/simplify.js)
+and import as you prefer.
 
 ## Usage
 
