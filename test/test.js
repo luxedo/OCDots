@@ -278,7 +278,6 @@ describe('Test public functions', () => {
     }, RangeError);
   });
   it("Appends one vertex if first and last vertices don't match", () => {
-    const width = 600;
     const p = ocdots.relaxNPoints({
       N: 1,
       polygon: [
@@ -293,7 +292,7 @@ describe('Test public functions', () => {
     assert.closeTo(p[0][1], final_pos[1], 0.1);
   });
   it("Appends one vertex if first and last vertices don't match (geo)", () => {
-    const width = 600;
+    const width = 100;
     const { points } = ocdots.relaxNGeoPoints({
       N: 1,
       geoPolygon: [
@@ -303,11 +302,10 @@ describe('Test public functions', () => {
         { lat: 10, lng: 0 },
       ],
       iterations: 100,
-      width: 100,
+      width,
     });
-    const final_pos = [50, 50];
-    assert.closeTo(points[0][0], final_pos[0], 0.1);
-    assert.closeTo(points[0][1], final_pos[1], 0.1);
+    assert.closeTo(points[0][0], width / 2, 0.1);
+    assert.closeTo(points[0][1], width / 2, 0.1);
   });
   it('Throws RangeError when passing mass = 0', () => {
     assert.throws(() => {
@@ -326,7 +324,6 @@ describe('Test public functions', () => {
     }, RangeError);
   });
   it('Points wont leave the polygon boundaries', () => {
-    const width = 600;
     const p = ocdots.relaxPoints({
       points: [[10, 20]],
       momentum: [[Infinity, 0]],
@@ -356,7 +353,7 @@ describe('Test public functions', () => {
     }, RangeError);
   });
   it('Runs with charges and masses as arrays', () => {
-    const [p, m] = ocdots.movePoints({
+    ocdots.movePoints({
       points: [
         [10, 10],
         [20, 20],
