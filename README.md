@@ -111,7 +111,7 @@ In the browser import the script as a [module](https://developer.mozilla.org/en-
 
 ```html
 <script type="module">
-  import * as ocdots from 'node_modules/ocdots/dist.browser/ocdots.js';
+  import * as ocdots from './node_modules/ocdots/dist.browser/ocdots.js';
   ocdots.movePoints(...);
 </script>
 ```
