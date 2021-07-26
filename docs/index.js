@@ -231,7 +231,7 @@ function loadMainCanvas() {
 
   window.setMasses = (random) => {
     if (random) {
-      mass = points.map(() => 0.1 + 3 * Math.random());
+      mass = points.map(() => 0.1 + Math.pow(5, 3 * Math.random()) - 1);
     } else {
       mass = ocdots.DEFAULTMASS;
     }
@@ -333,7 +333,7 @@ function loadPointDemo() {
       2 * maxMomentum * Math.random() - maxMomentum,
     ]);
 
-    mass = randomMasses ? points.map(() => 0.1 + 3 * Math.random()) : ocdots.DEFAULTMASS;
+    mass = randomMasses ? points.map(() => 0.1 + Math.pow(5, 3 * Math.random()) - 1) : ocdots.DEFAULTMASS;
 
     charge = randomCharges ? points.map(() => 3 * Math.random()) : ocdots.DEFAULTMASS;
   }
@@ -388,7 +388,7 @@ function loadWireDemo() {
       2 * maxMomentum * Math.random() - maxMomentum,
     ]);
 
-    mass = randomMasses ? points.map(() => 0.1 + 3 * Math.random()) : ocdots.DEFAULTMASS;
+    mass = randomMasses ? points.map(() => 0.1 + Math.pow(5, 3 * Math.random()) - 1) : ocdots.DEFAULTMASS;
 
     charge = randomCharges ? points.map(() => 3 * Math.random()) : ocdots.DEFAULTMASS;
   }
@@ -447,7 +447,7 @@ function loadDragViscDemo() {
       2 * maxMomentum * Math.random() - maxMomentum,
     ]);
 
-    mass = randomMasses ? points.map(() => 0.1 + 3 * Math.random()) : ocdots.DEFAULTMASS;
+    mass = randomMasses ? points.map(() => 0.1 + Math.pow(5, 3 * Math.random()) - 1) : ocdots.DEFAULTMASS;
 
     charge = randomCharges ? points.map(() => 3 * Math.random()) : ocdots.DEFAULTMASS;
   }
@@ -508,7 +508,7 @@ function loadMassChargeDemo() {
       2 * maxMomentum * Math.random() - maxMomentum,
     ]);
 
-    mass = points.map(() => 0.1 + 3 * Math.random());
+    mass = points.map(() => 0.1 + Math.pow(5, 3 * Math.random()) - 1);
     charge = points.map(() => (Math.random() > 0.5 ? 1 : -1));
   }
 

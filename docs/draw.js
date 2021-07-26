@@ -48,7 +48,7 @@ export function drawPoints(ctx, points, mass, charge, baseRadius = 3, palette = 
     }
     ctx.fillStyle = color;
     ctx.beginPath();
-    ctx.arc(pt[0], pt[1], 3 + _mass[i] * baseRadius, 0, 2 * Math.PI, 0);
+    ctx.arc(pt[0], pt[1], 3 + Math.log(_mass[i] + 2) * baseRadius, 0, 2 * Math.PI, 0);
     ctx.fill();
   });
 }
