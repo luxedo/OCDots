@@ -266,7 +266,6 @@ describe('Test public functions', () => {
     });
   });
   it('Fails with a polygon smaller than 3 vertices', () => {
-    const width = 600;
     assert.throws(() => {
       ocdots.movePoints({
         points: [[0, 0]],
@@ -275,9 +274,107 @@ describe('Test public functions', () => {
           [0, 0],
           [1, 1],
         ],
-        width,
       });
     }, RangeError);
+  });
+  it("Appends one vertex if first and last vertices don't match", () => {
+    const width = 600;
+    const p = ocdots.relaxNPoints({
+      N: 1,
+      polygon: [
+        [100, 0],
+        [0, 100],
+        [200, 100],
+      ],
+      iterations: 100,
+    });
+    const final_pos = [100, 58.57];
+    assert.closeTo(p[0][0], final_pos[0], 0.1);
+    assert.closeTo(p[0][1], final_pos[1], 0.1);
+  });
+  it("Appends one vertex if first and last vertices don't match (geo)", () => {
+    const width = 600;
+    const { points } = ocdots.relaxNGeoPoints({
+      N: 1,
+      geoPolygon: [
+        { lat: 0, lng: 0 },
+        { lat: 0, lng: 10 },
+        { lat: 10, lng: 10 },
+        { lat: 10, lng: 0 },
+      ],
+      iterations: 100,
+      width: 100,
+    });
+    const final_pos = [50, 50];
+    assert.closeTo(points[0][0], final_pos[0], 0.1);
+    assert.closeTo(points[0][1], final_pos[1], 0.1);
+  });
+  it('Throws RangeError when passing mass = 0', () => {
+    assert.throws(() => {
+      ocdots.movePoints({
+        points: [[0.5, 0.5]],
+        momentum: [[0, 0]],
+        polygon: [
+          [0, 0],
+          [0, 1],
+          [1, 1],
+          [1, 0],
+          [0, 0],
+        ],
+        mass: 0,
+      });
+    }, RangeError);
+  });
+  it('Points wont leave the polygon boundaries', () => {
+    const width = 600;
+    const p = ocdots.relaxPoints({
+      points: [[10, 20]],
+      momentum: [[Infinity, 0]],
+      polygon: [
+        [0, 0],
+        [0, 100],
+        [100, 100],
+        [100, 0],
+        [0, 0],
+      ],
+      drag: 0,
+      viscosity: 0,
+      iterations: 100,
+    });
+    assert.closeTo(p[0][0], 50, 1);
+    assert.closeTo(p[0][1], 50, 1);
+  });
+  it('checkInbounds fails for polygons with less than 3 vertices', () => {
+    assert.throws(() => {
+      ocdots.checkInbounds(
+        [10, 10],
+        [
+          [0, 0],
+          [0, 20],
+        ]
+      );
+    }, RangeError);
+  });
+  it('Runs with charges and masses as arrays', () => {
+    const [p, m] = ocdots.movePoints({
+      points: [
+        [10, 10],
+        [20, 20],
+      ],
+      momentum: [
+        [0, 0],
+        [0, 0],
+      ],
+      polygon: [
+        [0, 0],
+        [0, 100],
+        [100, 100],
+        [100, 0],
+        [0, 0],
+      ],
+      charge: [1, 2],
+      mass: [1, 2],
+    });
   });
 });
 

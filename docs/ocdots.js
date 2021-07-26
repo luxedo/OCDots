@@ -303,8 +303,8 @@ function isLeft(p0, p1, p2) {
  * @return {boolean} inbound True if pt is inside the polygon
  */
 export function checkInbounds(pt, polygon) {
-  if (polygon.length === 0) {
-    return false;
+  if (polygon.length < 3) {
+    throw new RangeError('Polygon must have at least 3 vertices');
   }
   var n = polygon.length;
   var newPoints = polygon.slice(0);
@@ -453,15 +453,15 @@ export function relaxPoints(_a) {
           return [0, 0];
         })
       : __spreadArray([], momentum);
-  var att = 1 + attenuation;
-  for (var i = 0, attIter = att; i < iterations; i++, attIter *= att) {
+  for (var i = 0; i < iterations; i++) {
+    var currentDrag = drag + (1 - drag) * Math.tanh(i * attenuation);
     (_b = movePoints({
       points: p,
       momentum: m,
       polygon: polygon,
       mass: mass,
       baseForce: baseForce,
-      drag: drag * attIter,
+      drag: currentDrag,
       viscosity: viscosity,
       maxMomentum: maxMomentum,
       parallelForces: parallelForces,
@@ -471,7 +471,7 @@ export function relaxPoints(_a) {
       (p = _b[0]),
       (m = _b[1]);
     if (callback != undefined) {
-      callback(p, m, polygon, baseForce, drag * attIter, viscosity, maxMomentum);
+      callback(p, m, polygon, baseForce, currentDrag, viscosity, maxMomentum);
     }
   }
   return p;
